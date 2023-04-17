@@ -1,0 +1,41 @@
+.videos-viewer,
+.images-viewer {
+  transform: translate3d(0, 0, 0);
+  .ant-modal-content {
+    background: transparent;
+    box-shadow: none;
+  }
+  .ant-modal-close {
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    opacity: 0;
+    display: none;
+    color: fade(#fff, 75%);
+  }
+
+  .images-thumbnail {
+    opacity: 0.6;
+    transition: all 0.2s ease-in;
+    cursor: pointer;
+    &:hover,
+    &.active {
+      opacity: 1;
+    }
+  }
+}
+
+.imageContent {
+  transform-style: preserve-3d;
+  position: relative;
+  transform-origin: 0 0;
+  max-width: 80vw;
+  max-height: 80vh;
+
+  object-fit: cover;
+  transform: var(--imageViewerTransform, "translate3d(0,0,0) scale(1)");
+}
+
+.vxe-table--border-line {
+  border-radius: 0.25rem;
+}

@@ -1,0 +1,48 @@
+[package]
+name = "webapp-storage"
+version = "0.0.0"
+description = "A Tauri App"
+authors = ["you"]
+license = ""
+repository = ""
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "1.2", features = [] }
+
+[dependencies]
+bytes = "1.0"
+hyper = "0.12.0"
+io = "0.0.2"
+urlencoding="1.0.0"
+hex="0.4.3"
+chrono="0.4.24"
+mime_guess = "2.0.3"
+lazy_static = "1.4.0"
+rust-crypto = "0.2.36"
+async-stream="0.3.4"
+reqwest-middleware="0.2.1"
+reqwest-retry="0.2.2"
+url="2.3.1"
+opener="0.6.0"
+serde_json = "1.0.95"
+ring="0.17.0-alpha.11"
+walkdir = "2.3.3"
+pathdiff="0.2.1"
+wasm-bindgen = "0.2.84"
+percent-encoding="2.2.0"
+futures="0.3.28"
+tokio-util = { version = "0.7.7", features = ["codec"] }
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "1.0.5", features = ["clipboard-all", "dialog-all", "path-all", "window-all"] }
+reqwest = { version = "0.11.11", features = ["stream"] }
+futures-util = "0.3.21"
+async-recursion = "1.0.0"
+tauri-plugin-oauth = { git = "https://github.com/FabianLars/tauri-plugin-oauth", branch = "main" }
+[features]
+# this feature is used for production builds or when `devPath` points to the filesystem
+# DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]
