@@ -20,6 +20,7 @@ import { useCurrentPath, useDiskStore } from "@src/pages/disk/store";
 import { useRequest } from "vue-request";
 import { deleteDir, deleteObject } from "@src/src-clients/storage";
 import { AuthButton } from "@src/components/authButton";
+import { last } from "lodash";
 
 export const DiskMenus = defineComponent({
   setup() {
@@ -138,15 +139,8 @@ export const DiskMenus = defineComponent({
 
             <AuthButton
               class={"ml-2"}
-              disabled={!!hasSelectFile.value || selectedDirs.value.length !== 1}
               hasPermission={hasAuth.value}
-              title={
-                selectedDirs.value.length > 1
-                  ? "只能对单个文件夹进行权限管理"
-                  : hasSelectFile.value
-                  ? "只有文件夹才可以管理权限"
-                  : "无权限操作"
-              }
+              title={"无权限操作"}
               onClick={() => {
                 Modal.confirm({
                   title: "权限管理",
@@ -155,7 +149,7 @@ export const DiskMenus = defineComponent({
                   closable: true,
                   appContext: getCurrentInstance()?.appContext,
                   content: createVNode(
-                    <DirAuthModal dir={{ name: selectedDirs.value[0].name, path: selectedDirs.value[0].path }} />,
+                    <DirAuthModal dir={{ name: last(currentPath.value.split("/")) || "/", path: currentPath.value }} />,
                   ),
                   cancelButtonProps: { style: { display: "none" } } as any,
                   okButtonProps: { style: { display: "none" } } as any,

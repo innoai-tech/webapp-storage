@@ -21,7 +21,6 @@ const displayTab = (key: ITab) =>
 
 export interface IGroupAuthGroup extends IGroup {
   roleType: IRbacRoleType;
-  parentDirRoles: IRbacGroupFull[];
 }
 export const useDirAuthStore = defineStore("dirAuth", () => {
   const tab = ref<"GROUP" | "MEMBER">("GROUP");
@@ -43,12 +42,12 @@ export const useDirAuthStore = defineStore("dirAuth", () => {
   );
 
   const currentDirGroupRoleMap = computed(() => {
+    console.log(dirRoles.value?.data);
     return (
       dirRoles.value?.data?.reduce(
         (p, c) => ({
           ...p,
           [c.groupID]: {
-            parentDirRoles: c.roles.filter((item) => item.path !== currentDir.value?.path),
             roleType: c.roles.find((item) => item.path === currentDir.value?.path)?.roleType,
           },
         }),

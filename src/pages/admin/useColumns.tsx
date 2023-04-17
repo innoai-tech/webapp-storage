@@ -15,7 +15,7 @@ export const useColumns = () => {
       width: 300,
     },
     {
-      title: "创建时间",
+      title: "状态",
       key: "state",
       dataKey: "state",
       width: 200,

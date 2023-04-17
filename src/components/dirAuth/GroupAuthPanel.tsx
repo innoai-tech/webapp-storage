@@ -1,5 +1,5 @@
 import { computed, createVNode, defineComponent, onMounted, ref } from "vue";
-import { Dropdown, InputSearch, Menu, MenuItem, message, Tooltip, Modal } from "ant-design-vue";
+import { Dropdown, InputSearch, Menu, MenuItem, message, Tooltip, Modal, Select } from "ant-design-vue";
 import {
   bindDirGroupRole,
   displayRbacRoleType,
@@ -37,10 +37,10 @@ export const useRoleOptions = () => {
 };
 
 export const useGroupAuthStore = defineStore("groupAuth", () => {
-  const searchGroupName = ref("");
+  const searchGroupID = ref("");
 
   return {
-    searchGroupName,
+    searchGroupID,
   };
 });
 
@@ -59,17 +59,12 @@ export const GroupAuthPanel = defineComponent({
     const searchedGroups = computed(
       () =>
         (
-          (groupAuthStore.searchGroupName?.trim()
-            ? groupsStore.allGroups?.data?.filter(
-                (group) =>
-                  group.name?.includes(groupAuthStore.searchGroupName?.trim()) ||
-                  groupAuthStore.searchGroupName?.includes(group.name?.trim()),
-              )
+          (groupAuthStore.searchGroupID?.trim()
+            ? groupsStore.allGroups?.data?.filter((group) => groupAuthStore.searchGroupID === group.groupID)
             : groupsStore.allGroups?.data) || []
         ).map((item) => ({
           ...item,
           roleType: dirAuthStore.currentDirGroupRoleMap[item.groupID]?.roleType,
-          parentDirRoles: dirAuthStore.currentDirGroupRoleMap[item.groupID]?.parentDirRoles,
         })) as IGroupAuthGroup[],
     );
 
@@ -79,11 +74,19 @@ export const GroupAuthPanel = defineComponent({
           <div class={"flex justify-end sticky top-0 bg-white mb-4"}>
             <div class={"flex flex-1 justify-end"}>
               <div>
-                <InputSearch
-                  v-model:value={groupAuthStore.searchGroupName}
-                  class={"flex h-full items-center"}
-                  placeholder="输入组织名称搜索"
-                />
+                <Select
+                  placeholder={"输入组织名称搜索"}
+                  class={"flex w-40 h-full items-center"}
+                  showSearch
+                  allowClear
+                  options={groupsStore.allGroups?.data?.map((item) => ({
+                    value: item.groupID,
+                    label: item.name,
+                  }))}
+                  onChange={(value) => {
+                    groupAuthStore.searchGroupID = value as string;
+                  }}
+                  value={groupAuthStore.searchGroupID}></Select>
               </div>
             </div>
           </div>
@@ -138,26 +141,27 @@ function useColumns() {
         return <span class={"text-ellipsis whitespace-pre"}>{record.desc || "-"} </span>;
       },
     },
-    {
-      title: "父级权限",
-      key: "parentDirRoles",
-      dataIndex: "parentDirRoles",
-      width: 200,
-      customRender({ record }: { record: IGroupAuthGroup }) {
-        return (
-          <div>
-            {record.parentDirRoles?.map((item) => {
-              const text = `${item.path}: ${displayRbacRoleType(item.roleType)}`;
-              return (
-                <div key={text} class={"text-xs overflow-hidden whitespace-pre text-ellipsis"}>
-                  <Tooltip title={text}>{text}</Tooltip>
-                </div>
-              );
-            })}
-          </div>
-        );
-      },
-    },
+    // {
+    //   title: "父级权限",
+    //   key: "parentDirRoles",
+    //   dataIndex: "parentDirRoles",
+    //   width: 200,
+    //   customRender({ record }: { record: IGroupAuthGroup }) {
+    //     console.log(record.parentDirRoles);
+    //     return (
+    //       <div>
+    //         {record.parentDirRoles?.map((item) => {
+    //           const text = `${item.path}: ${displayRbacRoleType(item.roleType)}`;
+    //           return (
+    //             <div key={text} class={"text-xs overflow-hidden whitespace-pre text-ellipsis"}>
+    //               <Tooltip title={text}>{text}</Tooltip>
+    //             </div>
+    //           );
+    //         })}
+    //       </div>
+    //     );
+    //   },
+    // },
     {
       title: "更新时间",
       key: "createdAt",
@@ -186,6 +190,7 @@ function useColumns() {
                           <MenuItem
                             key={value}
                             onClick={() => {
+                              console.log(dirAuthStore.currentDir, "dirAuthStore.currentDir.path");
                               Modal.confirm({
                                 title: `确定修改权限为${label}?`,
                                 closable: true,

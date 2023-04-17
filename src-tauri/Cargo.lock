@@ -3263,6 +3263,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "storage"
+version = "0.0.0"
+dependencies = [
+ "async-recursion",
+ "async-stream",
+ "bytes 1.4.0",
+ "chrono",
+ "futures 0.3.28",
+ "futures-util",
+ "hex",
+ "hyper 0.12.36",
+ "io",
+ "lazy_static",
+ "mime_guess",
+ "opener",
+ "pathdiff",
+ "percent-encoding",
+ "reqwest",
+ "reqwest-middleware",
+ "reqwest-retry",
+ "ring",
+ "rust-crypto",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-oauth",
+ "tokio 1.26.0",
+ "tokio-util",
+ "url",
+ "urlencoding",
+ "walkdir",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "string"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4306,42 +4342,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e33b99f4b23ba3eec1a53ac264e35a755f00e966e0065077d6027c0f575b0b97"
 dependencies = [
  "js-sys",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "webapp-storage"
-version = "0.0.0"
-dependencies = [
- "async-recursion",
- "async-stream",
- "bytes 1.4.0",
- "chrono",
- "futures 0.3.28",
- "futures-util",
- "hex",
- "hyper 0.12.36",
- "io",
- "lazy_static",
- "mime_guess",
- "opener",
- "pathdiff",
- "percent-encoding",
- "reqwest",
- "reqwest-middleware",
- "reqwest-retry",
- "ring",
- "rust-crypto",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-oauth",
- "tokio 1.26.0",
- "tokio-util",
- "url",
- "urlencoding",
- "walkdir",
  "wasm-bindgen",
 ]
 
