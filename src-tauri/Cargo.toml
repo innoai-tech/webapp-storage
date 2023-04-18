@@ -15,7 +15,7 @@ tauri-build = { version = "1.2", features = [] }
 [dependencies]
 bytes = "1.0"
 hyper = "0.12.0"
-io = "0.0.2"
+io = "0.0.3"
 urlencoding="1.0.0"
 hex="0.4.3"
 chrono="0.4.24"
