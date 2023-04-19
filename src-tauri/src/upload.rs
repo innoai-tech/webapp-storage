@@ -183,6 +183,13 @@ pub async fn upload_core(
             yield chunk;
         }
     };
+
+    let reset_upload_len = move || {
+        //上传失败减去本次上传的进度
+        let len = before_upload_len.load(Ordering::Relaxed);
+        uploaded_len.fetch_sub(len, Ordering::Relaxed);
+    };
+
     // 发送上传请求
     match reqwest::Client::new()
         .post(url.as_str())
@@ -207,13 +214,13 @@ pub async fn upload_core(
                     ),
                 };
 
+                reset_upload_len();
                 return Err(Box::new(err));
             }
         }
         Err(e) => {
             //上传失败减去本次上传的进度
-            let len = before_upload_len.load(Ordering::Relaxed);
-            uploaded_len.fetch_sub(len, Ordering::Relaxed);
+            reset_upload_len();
             return Err(Box::new(e));
         }
     }

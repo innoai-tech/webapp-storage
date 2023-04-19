@@ -7,7 +7,6 @@ import {
   LoadingOutlined,
   LogoutOutlined,
   ReconciliationOutlined,
-  SettingOutlined,
   ThunderboltOutlined,
   UserAddOutlined,
   UserOutlined,

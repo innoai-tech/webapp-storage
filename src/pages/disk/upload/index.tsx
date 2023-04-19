@@ -196,7 +196,7 @@ export const UploadModal = defineComponent({
           <p class="ant-upload-drag-icon text-5xl text-blue-400 m-0 mb-3">
             <InboxOutlined />
           </p>
-          <p class="ant-upload-text mb-1 text-base">点击或者拖拽文件{props.mode === "DIR" ? "夹" : ""}到这里上传</p>
+          <p class="ant-upload-text mb-1 text-base">点击上传文件{props.mode === "DIR" ? "夹" : ""}</p>
           <p class="ant-upload-hint text-gray-500">
             {props.mode === "DIR" ? "仅支持单个文件夹" : "支持单个或批量上传"}
           </p>
