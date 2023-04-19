@@ -1,7 +1,7 @@
 import { computed, createVNode, defineComponent, getCurrentInstance, onMounted, ref } from "vue";
 import { useRequest } from "vue-request";
 import { currentUserGroup, IGroupRoleType, listGroup } from "@src/src-clients/storage";
-import { InputSearch, Modal } from "ant-design-vue";
+import { InputSearch, Modal, Select } from "ant-design-vue";
 import { PlusOutlined } from "@ant-design/icons-vue";
 import { defineStore } from "pinia";
 import { useCurrentAccountStore } from "@src/pages/account";
@@ -11,7 +11,7 @@ import { Table } from "@src/components/table";
 import { AuthButton } from "@src/components/authButton";
 
 export const useGroupsStore = defineStore("groups", () => {
-  const filterGroupName = ref("");
+  const searchGroupID = ref("");
   const accountStore = useCurrentAccountStore();
 
   const { data: currentUserGroups, runAsync: getUserGroups } = useRequest(() => currentUserGroup({ size: -1 }), {
@@ -50,7 +50,7 @@ export const useGroupsStore = defineStore("groups", () => {
     getGroups,
     currentUserGroups,
     allGroups,
-    filterGroupName,
+    searchGroupID,
   };
 });
 
@@ -63,12 +63,8 @@ export const OrgPanel = defineComponent({
     });
 
     const searchedGroups = computed(() =>
-      groupsStore.filterGroupName?.trim()
-        ? groupsStore.groups?.data?.filter(
-            (group) =>
-              group.name?.includes(groupsStore.filterGroupName?.trim()) ||
-              groupsStore.filterGroupName?.includes(group.name?.trim()),
-          )
+      groupsStore.searchGroupID?.trim()
+        ? groupsStore.groups?.data?.filter((group) => groupsStore.searchGroupID === group.name)
         : groupsStore.groups?.data,
     );
 
@@ -103,11 +99,19 @@ export const OrgPanel = defineComponent({
                 </AuthButton>
               </div>
               <div>
-                <InputSearch
-                  v-model:value={groupsStore.filterGroupName}
-                  class={"flex h-full items-center"}
-                  placeholder="输入组织名称搜索"
-                />
+                <Select
+                  placeholder={"输入组织名称搜索"}
+                  class={"flex w-40 h-full items-center"}
+                  showSearch
+                  allowClear
+                  options={groupsStore.allGroups?.data?.map((item) => ({
+                    value: item.groupID,
+                    label: item.name,
+                  }))}
+                  onChange={(value) => {
+                    groupsStore.searchGroupID = value as string;
+                  }}
+                  value={groupsStore.searchGroupID}></Select>
               </div>
             </div>
           </div>

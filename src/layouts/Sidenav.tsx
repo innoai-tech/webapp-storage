@@ -7,7 +7,6 @@ import {
   LoadingOutlined,
   LogoutOutlined,
   ReconciliationOutlined,
-  SettingOutlined,
   ThunderboltOutlined,
   UserAddOutlined,
   UserOutlined,
@@ -63,12 +62,6 @@ export const Sidenav = defineComponent({
           icon: <ReconciliationOutlined />,
           label: "操作记录",
           key: "log",
-          show: currentUserStore.account?.isAdmin,
-        },
-        {
-          icon: <SettingOutlined />,
-          label: "系统设置",
-          key: "setting",
           show: currentUserStore.account?.isAdmin,
         },
       ];

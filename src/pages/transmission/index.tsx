@@ -227,7 +227,6 @@ export const useTransmissionStore = defineStore(storeKey, () => {
           if (tab.value !== "FINISHED") {
             hasNewFinished.value = true;
           }
-
           // 塞入已完成列表
           finishedList.value = resData.download_complete_infos
             .map((item) => infoMap[item.id])

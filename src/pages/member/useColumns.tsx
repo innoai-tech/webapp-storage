@@ -4,6 +4,7 @@ import { useRequest } from "vue-request";
 import { Button, Modal } from "ant-design-vue";
 import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
 import { useMembersStore } from "@src/pages/member";
+import { toFullTime } from "@src/utils/date";
 export const useColumns = () => {
   const membersStore = useMembersStore();
   const { run: updateMemberState } = useRequest(putAccountState, {
@@ -20,12 +21,12 @@ export const useColumns = () => {
       width: 200,
     },
     {
-      title: "成员角色",
-      key: "roleType",
-      dataKey: "roleType",
+      title: "创建时间",
+      key: "createdAt",
+      dataKey: "createdAt",
       width: 200,
-      cellRenderer({ rowData }: { rowData: IGroupUser }) {
-        return <span>{displayGroupRoleType(rowData.roleType) || "-"}</span>;
+      cellRenderer({ rowData }: { rowData: IAccountUser }) {
+        return <span>{toFullTime(rowData.createdAt) || "-"}</span>;
       },
     },
 

@@ -13,9 +13,6 @@ export const MustLogin = defineComponent({
     const isValidToken = computed(() => {
       return auth.access?.expiresDate && auth.access.expiresDate - dayjs().valueOf() > 100;
     });
-
-    // 定时刷新
-    useRefreshToken();
     watch(
       () => isValidToken.value,
       () => {
@@ -31,6 +28,9 @@ export const MustLogin = defineComponent({
       },
       { immediate: true },
     );
+
+    // 定时刷新
+    useRefreshToken();
 
     return () => (auth.access && isValidToken ? <RouterView></RouterView> : null);
   },
