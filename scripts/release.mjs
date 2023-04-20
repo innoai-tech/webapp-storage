@@ -45,3 +45,4 @@ async function release() {
   execSync(`git push origin v${nextVersion}`);
   console.log(`Publish Successfully...`);
 }
+release();
