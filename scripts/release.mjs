@@ -10,7 +10,6 @@ async function release() {
   const flag = process.argv[2] ?? "patch";
   const packageJson = require("../package.json");
   let [a, b, c] = packageJson.version.split(".").map(Number);
-
   if (flag === "major") {
     // 主版本
     a += 1;
