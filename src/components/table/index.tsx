@@ -6,7 +6,7 @@ import { CellRendererParams, Column } from "element-plus/es/components/table-v2/
 /*
  * element plus 的部分定义有问题，修改一下
  * */
-export declare type CellRenderer<T> = (params: CellRendererParams<T>) => VNode | null;
+export declare type CellRenderer<T> = (params: CellRendererParams<T>) => string | Element | VNode | null;
 export declare interface TableColumn<T = any> extends Omit<Column, "cellRenderer"> {
   /**
    * Renderers

@@ -30,7 +30,7 @@ export const APP_CONFIG = {
 
   //后端请求地址
   SRV_STORAGE: () => {
-    return "http://172.20.50.27:20080";
+    return "//172.20.30.92:8090";
   },
 };
 

@@ -967,15 +967,17 @@ export const getGroup = createApiInstance<
 
 export const getObject = createApiInstance<
   {
+    authorization?: string;
     path: string;
     "image-process"?: IImageProcessProcessCondition;
   },
   null
->("storage.GetObject", ({ path: pPath, "image-process": pImageProcess }) => {
+>("storage.GetObject", ({ authorization: pAuthorization, path: pPath, "image-process": pImageProcess }) => {
   return {
     method: "GET",
-    url: `/api/storage/v0/openapi/objects/get`,
+    url: `/api/storage/v0/objects/get`,
     query: {
+      authorization: pAuthorization,
       path: pPath,
       "image-process": pImageProcess,
     },
@@ -1214,17 +1216,17 @@ export const listGroupAccount = createApiInstance<
 
 export const listObjects = createApiInstance<
   {
-    dir: string;
-    onlyDir?: IDatatypesBool;
+    authorization?: string;
+    path: string;
   },
-  IOpenapiObjectDataList
->("storage.ListObjects", ({ dir: pDir, onlyDir: pOnlyDir }) => {
+  IObjectObjectDataList
+>("storage.ListObjects", ({ authorization: pAuthorization, path: pPath }) => {
   return {
     method: "GET",
-    url: `/api/storage/v0/openapi/objects/list`,
+    url: `/api/storage/v0/objects/list`,
     query: {
-      dir: pDir,
-      onlyDir: pOnlyDir,
+      authorization: pAuthorization,
+      path: pPath,
     },
   };
 });
@@ -1360,6 +1362,40 @@ export const openAPI = createApiInstance<void, null>("storage.OpenAPI", () => {
   return {
     method: "GET",
     url: `/api/storage`,
+  };
+});
+
+export const openapiGetObject = createApiInstance<
+  {
+    path: string;
+    "image-process"?: IImageProcessProcessCondition;
+  },
+  null
+>("storage.OpenapiGetObject", ({ path: pPath, "image-process": pImageProcess }) => {
+  return {
+    method: "GET",
+    url: `/api/storage/v0/openapi/objects/get`,
+    query: {
+      path: pPath,
+      "image-process": pImageProcess,
+    },
+  };
+});
+
+export const openapiListObjects = createApiInstance<
+  {
+    dir: string;
+    onlyDir?: IDatatypesBool;
+  },
+  IOpenapiObjectDataList
+>("storage.OpenapiListObjects", ({ dir: pDir, onlyDir: pOnlyDir }) => {
+  return {
+    method: "GET",
+    url: `/api/storage/v0/openapi/objects/list`,
+    query: {
+      dir: pDir,
+      onlyDir: pOnlyDir,
+    },
   };
 });
 
