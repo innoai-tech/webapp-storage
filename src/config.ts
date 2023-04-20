@@ -32,9 +32,9 @@ export const APP_CONFIG = {
   SRV_STORAGE: () => {
     // @ts-ignore
     if ((import.meta as any).env.PROD) {
-      return "//172.20.50.27:20080";
+      return "http://172.20.50.27:20080";
     }
-    return "//172.20.30.92:8090";
+    return "http://172.20.30.92:8090";
   },
 };
 
