@@ -13,16 +13,10 @@ import { toFullDate } from "@src/utils/date";
 import { useMembersStore } from "@src/pages/member";
 import { defineStore } from "pinia";
 import { useRequest } from "vue-request";
-import {
-  DownOutlined,
-  ExclamationCircleOutlined,
-  InfoCircleFilled,
-  InfoCircleOutlined,
-  InfoOutlined,
-} from "@ant-design/icons-vue";
+import { DownOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from "@ant-design/icons-vue";
 import { useDirAuthStore } from "@src/components/dirAuth/index";
 import { useRoleOptions } from "@src/components/dirAuth/GroupAuthPanel";
-import { Table } from "ant-design-vue";
+import { Table } from "@src/components/table";
 import { AuthButton } from "@src/components/authButton";
 
 const useAuthGroupMemberPanelStore = defineStore("authGroupMemberPanel", () => {
@@ -108,7 +102,7 @@ export const AuthGroupMemberPanel = defineComponent({
           </div>
 
           {/*element 的虚拟表格在 modal 内表现异常，cellrender 会报错，替换为啊 antdvue*/}
-          <Table rowKey={"accountID"} dataSource={members.value || []} columns={columns} />
+          <Table filled={false} rowKey={"accountID"} data={members.value || []} columns={columns} />
         </div>
       );
     };
@@ -138,11 +132,14 @@ function useColumns() {
     {
       title: "用户名称",
       key: "name",
-      dataIndex: "name",
+      dataKey: "name",
       width: 200,
     },
     {
-      title() {
+      key: "roles",
+      dataKey: "roles",
+      width: 200,
+      headerCellRenderer() {
         return (
           <div>
             用户角色
@@ -152,7 +149,7 @@ function useColumns() {
                   <span
                     class={
                       "whitespace-break-spaces"
-                    }>{`拥有者：可以修改、删除组织，可以查看、添加、删除文件。可以添加管理员和普通成员。\n组织管理员：可以修改组织，查看、添加、删除文件。可以添加普通成员、移除普通成员。\n组织成员：可以查看、添加文件。无法添加、删除成员。
+                    }>{`拥有者：可以查看、添加、删除文件。可以赋予其他人管理员和普通成员权限。\n管理员：可以查看、添加、删除文件。可以赋予其他人成员权限。\n成员：可以查看、添加文件。
               `}</span>
                 }>
                 <InfoCircleOutlined />
@@ -161,38 +158,35 @@ function useColumns() {
           </div>
         );
       },
-      key: "roles",
-      dataIndex: "roles",
-      width: 200,
-      customRender({ record }: { record: IUser }) {
-        return <span>11{displayRbacRoleType(record.roleType) || "-"} </span>;
+      cellRenderer({ rowData }: { rowData: IUser }) {
+        return <span>{displayRbacRoleType(rowData.roleType) || "-"} </span>;
       },
     },
     {
       title: "状态",
       key: "state",
-      dataIndex: "state",
+      dataKey: "state",
       width: 200,
-      customRender({ record }: { record: IUser }) {
-        return <span class={"text-ellipsis whitespace-pre"}>{record.state === "ENABLE" ? "启用" : "禁用"} </span>;
+      cellRenderer({ rowData }: { rowData: IUser }) {
+        return <span class={"text-ellipsis whitespace-pre"}>{rowData.state === "ENABLE" ? "启用" : "禁用"} </span>;
       },
     },
     {
       title: "更新时间",
       key: "updatedAt",
-      dataIndex: "updatedAt",
+      dataKey: "updatedAt",
       width: 200,
-      customRender({ record }: { record: IUser }) {
-        return <span>{toFullDate(record.updatedAt)}</span>;
+      cellRenderer({ rowData }: { rowData: IUser }) {
+        return <span>{toFullDate(rowData.updatedAt)}</span>;
       },
     },
 
     {
       title: "操作",
       key: "accountID",
-      dataIndex: "accountID",
+      dataKey: "accountID",
       width: 200,
-      customRender({ record }: { record: IUser }) {
+      cellRenderer({ rowData }: { rowData: IUser }) {
         return (
           <div class={"gap-2 flex items-center"}>
             <Dropdown
@@ -213,7 +207,7 @@ function useColumns() {
                                 onOk() {
                                   if (!dirAuthStore.currentDir?.path) return;
                                   return bindDirUserRoleRequest({
-                                    accountID: record.accountID,
+                                    accountID: rowData.accountID,
                                     path: dirAuthStore.currentDir.path,
                                     body: {
                                       roleType: value as IRbacRoleType,
@@ -234,14 +228,14 @@ function useColumns() {
                 hasPermission={dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"}
                 type={"link"}
                 class={"p-0"}>
-                {record.roleType ? "修改权限" : "添加权限"}
+                {rowData.roleType ? "修改权限" : "添加权限"}
                 <DownOutlined />
               </AuthButton>
             </Dropdown>
 
             <AuthButton
               hasPermission={
-                dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER" && !!record.roleType
+                dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER" && !!rowData.roleType
               }
               title={
                 dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"
@@ -249,7 +243,7 @@ function useColumns() {
                   : "无权限操作"
               }
               class={"ml-2"}
-              disabled={!record.roleType}
+              disabled={!rowData.roleType}
               type={"link"}
               danger
               onClick={() => {
@@ -260,7 +254,7 @@ function useColumns() {
                   onOk() {
                     if (!dirAuthStore.currentDir?.path) return;
                     return unBindDirUserRoleRequest({
-                      accountID: record.accountID,
+                      accountID: rowData.accountID,
                       path: dirAuthStore.currentDir.path,
                     });
                   },

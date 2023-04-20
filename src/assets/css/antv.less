@@ -17,10 +17,18 @@ body {
       overflow: hidden;
     }
   }
+
+  // 表单内的快捷写法，space 里第一个元素默认占满
+  .ant-form-vertical .ant-space .ant-space-item:first-of-type {
+    flex: 1;
+  }
+
+  //link 不显示 padding，在 table 里表新的更好
   .ant-btn-link {
     padding: 0;
   }
 
+  //分页宽度设置宽一点
   .ant-pagination-options .ant-pagination-options-size-changer {
     width: 100px;
   }

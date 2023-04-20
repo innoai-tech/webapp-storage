@@ -33,7 +33,14 @@ export const useColumns = () => {
       width: 200,
     },
     {
-      title() {
+      title: "用户角色",
+      key: "roleType",
+      dataKey: "roleType",
+      width: 200,
+      cellRenderer({ rowData }: { rowData: IGroupUser }) {
+        return <span>{displayGroupRoleType(rowData.roleType) || "-"}</span>;
+      },
+      headerCellRenderer() {
         return (
           <div>
             用户角色
@@ -43,7 +50,7 @@ export const useColumns = () => {
                   <span
                     class={
                       "whitespace-break-spaces"
-                    }>{`拥有者：可以修改、删除组织，可以查看、添加、删除文件。可以添加管理员和普通成员。\n组织管理员：可以修改组织，查看、添加、删除文件。可以添加普通成员、移除普通成员。\n组织成员：可以查看、添加文件。无法添加、删除成员。
+                    }>{`拥有者：可以修改、删除组织。可以添加管理员和普通成员。\n组织管理员：可以修改组织。可以添加普通成员、移除普通成员。\n组织成员：查看权限。
               `}</span>
                 }>
                 <InfoCircleOutlined />
@@ -51,12 +58,6 @@ export const useColumns = () => {
             </span>
           </div>
         );
-      },
-      key: "roleType",
-      dataKey: "roleType",
-      width: 200,
-      cellRenderer({ rowData }: { rowData: IGroupUser }) {
-        return <span>{displayGroupRoleType(rowData.roleType) || "-"}</span>;
       },
     },
 

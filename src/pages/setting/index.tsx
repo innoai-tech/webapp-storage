@@ -4,7 +4,7 @@ import { defineStore } from "pinia";
 import { appConf } from "@src/config";
 
 export const useSettingStore = defineStore(
-  "settingsv2",
+  "settingsv3",
   () => {
     const baseUrl = appConf()?.["SRV_STORAGE"];
     const host = ref(baseUrl);

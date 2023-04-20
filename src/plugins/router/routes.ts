@@ -8,6 +8,7 @@ import { Transmission } from "@src/pages/transmission";
 import { Admin } from "@src/pages/admin";
 import { Log } from "@src/pages/log";
 import { Setting } from "@src/pages/setting";
+import { ClientManage } from "@src/pages/clientManage";
 
 export const routes = [
   { path: "/login", component: Index, name: "login" },
@@ -70,6 +71,13 @@ export const routes = [
             name: "setting",
             children: [],
             meta: { title: "系统设置" },
+          },
+          {
+            path: "client-manage",
+            component: ClientManage,
+            name: "clientManage",
+            children: [],
+            meta: { title: "客户端管理" },
           },
           {
             path: ":matchAll(.*)",

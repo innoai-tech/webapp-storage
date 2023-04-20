@@ -16,15 +16,27 @@ export declare interface TableColumn<T = any> extends Omit<Column, "cellRenderer
 
 type TableType = {
   rowKey: string;
+  filled?: boolean;
   columns: TableColumn[];
 } & Omit<InstanceType<typeof ElTableV2>["$props"], "columns">;
 
 export const Table = defineComponent({
   inheritAttrs: false,
+  props: {
+    rowKey: {
+      required: true,
+      type: String,
+    },
+    filled: {
+      default: true,
+      required: false,
+      type: Boolean,
+    },
+  },
   setup(props, { slots, attrs }) {
     const domRef = ref<HTMLDivElement | null>(null);
     const width = ref(800);
-    const height = ref(600);
+    const height = ref(200);
 
     onMounted(() => {
       const dom = domRef.value;

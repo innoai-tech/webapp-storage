@@ -14,7 +14,7 @@ import { DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons-vue";
 import { useGroupsStore } from "@src/pages/org/orgPanel";
 import { toFullDate } from "@src/utils/date";
 import { useCurrentAccountStore } from "@src/pages/account";
-import { Table } from "ant-design-vue";
+import { Table } from "@src/components/table";
 import { AuthButton } from "@src/components/authButton";
 
 export const useRoleOptions = () => {
@@ -90,7 +90,7 @@ export const GroupAuthPanel = defineComponent({
               </div>
             </div>
           </div>
-          <Table rowKey={"groupID"} dataSource={searchedGroups.value || []} columns={columns} />
+          <Table filled={false} rowKey={"groupID"} data={searchedGroups.value || []} columns={columns} />
         </div>
       );
     };
@@ -120,16 +120,16 @@ function useColumns() {
     {
       title: "组织名称",
       key: "name",
-      dataIndex: "name",
+      dataKey: "name",
       width: 200,
     },
     {
       title: "当前权限",
       key: "roleType",
-      dataIndex: "roleType",
+      dataKey: "roleType",
       width: 200,
-      customRender({ record }: { record: IGroupAuthGroup }) {
-        return <span>{displayRbacRoleType(record.roleType) || "-"} </span>;
+      cellRenderer({ rowData }: { rowData: IGroupAuthGroup }) {
+        return <span>{displayRbacRoleType(rowData.roleType) || "-"} </span>;
       },
     },
     {
@@ -137,20 +137,20 @@ function useColumns() {
       key: "desc",
       dataKey: "desc",
       width: 200,
-      customRender({ record }: { record: IGroupAuthGroup }) {
-        return <span class={"text-ellipsis whitespace-pre"}>{record.desc || "-"} </span>;
+      cellRenderer({ rowData }: { rowData: IGroupAuthGroup }) {
+        return <span class={"text-ellipsis whitespace-pre"}>{rowData.desc || "-"} </span>;
       },
     },
     // {
     //   title: "父级权限",
     //   key: "parentDirRoles",
-    //   dataIndex: "parentDirRoles",
+    //   dataKey: "parentDirRoles",
     //   width: 200,
-    //   customRender({ record }: { record: IGroupAuthGroup }) {
-    //     console.log(record.parentDirRoles);
+    //   cellRenderer({ rowData }: { rowData: IGroupAuthGroup }) {
+    //     console.log(rowData.parentDirRoles);
     //     return (
     //       <div>
-    //         {record.parentDirRoles?.map((item) => {
+    //         {rowData.parentDirRoles?.map((item) => {
     //           const text = `${item.path}: ${displayRbacRoleType(item.roleType)}`;
     //           return (
     //             <div key={text} class={"text-xs overflow-hidden whitespace-pre text-ellipsis"}>
@@ -165,18 +165,18 @@ function useColumns() {
     {
       title: "更新时间",
       key: "createdAt",
-      dataIndex: "createdAt",
+      dataKey: "createdAt",
       width: 200,
-      customRender({ record }: { record: IGroupAuthGroup }) {
-        return <span>{toFullDate(record.updatedAt)}</span>;
+      cellRenderer({ rowData }: { rowData: IGroupAuthGroup }) {
+        return <span>{toFullDate(rowData.updatedAt)}</span>;
       },
     },
     {
       title: "操作",
       key: "groupID",
-      dataIndex: "groupID",
+      dataKey: "groupID",
       width: 200,
-      customRender({ record }: { record: IGroupAuthGroup }) {
+      cellRenderer({ rowData }: { rowData: IGroupAuthGroup }) {
         return (
           <div class={"gap-2 flex items-center"}>
             <Dropdown
@@ -197,7 +197,7 @@ function useColumns() {
                                 icon: createVNode(ExclamationCircleOutlined),
                                 onOk() {
                                   return bindGroupRole({
-                                    groupID: record.groupID,
+                                    groupID: rowData.groupID,
                                     path: dirAuthStore.currentDir!.path,
                                     body: {
                                       roleType: value as IRbacRoleType,
@@ -218,13 +218,13 @@ function useColumns() {
                 hasPermission={dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"}
                 type={"link"}
                 class={"p-0"}>
-                {record.roleType ? "修改权限" : "添加权限"}
+                {rowData.roleType ? "修改权限" : "添加权限"}
                 <DownOutlined />
               </AuthButton>
             </Dropdown>
             <AuthButton
               hasPermission={dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"}
-              disabled={!record.roleType}
+              disabled={!rowData.roleType}
               class={"ml-2"}
               title={
                 dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"
@@ -241,7 +241,7 @@ function useColumns() {
                   onOk() {
                     if (!dirAuthStore.currentDir?.path) return;
                     return unBindGroupRole({
-                      groupID: record.groupID,
+                      groupID: rowData.groupID,
                       path: dirAuthStore.currentDir.path,
                     });
                   },

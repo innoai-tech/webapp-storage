@@ -110,6 +110,27 @@ export const checkObject = createApiInstance<
   };
 });
 
+export const createClient = createApiInstance<
+  {
+    authorization?: string;
+    clientID: string;
+    body: IClientClientInfo;
+  },
+  IRepositoryClientWithSecret
+>("storage.CreateClient", ({ authorization: pAuthorization, clientID: pClientID, body: pBody }) => {
+  return {
+    method: "POST",
+    url: `/api/storage/v0/clients/${pClientID}`,
+    data: pBody,
+    query: {
+      authorization: pAuthorization,
+    },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+});
+
 export const createDir = createApiInstance<
   {
     authorization?: string;
@@ -213,6 +234,22 @@ export const deleteAdmin = createApiInstance<
   return {
     method: "DELETE",
     url: `/api/storage/v0/admins/${pAccountID}`,
+    query: {
+      authorization: pAuthorization,
+    },
+  };
+});
+
+export const deleteClient = createApiInstance<
+  {
+    authorization?: string;
+    clientID: string;
+  },
+  null
+>("storage.DeleteClient", ({ authorization: pAuthorization, clientID: pClientID }) => {
+  return {
+    method: "DELETE",
+    url: `/api/storage/v0/clients/${pClientID}`,
     query: {
       authorization: pAuthorization,
     },
@@ -478,6 +515,37 @@ export const displayAuthToken = (field: keyof IAuthToken) => {
   )[field];
 };
 
+export const displayClient = (field: keyof IClient) => {
+  return (
+    displayUtilsDatatypesPrimaryID(field as any) ||
+    displayClientClientInfo(field as any) ||
+    displayUtilsDatatypesCreationUpdationDeletionTime(field as any) ||
+    (
+      {
+        clientID: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayClientClientDataList = (field: keyof IClientClientDataList) => {
+  return (
+    {
+      data: "",
+      total: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayClientClientInfo = (field: keyof IClientClientInfo) => {
+  return (
+    {
+      desc: "描述",
+      whiteList: "IP 白名单",
+    } as { [key: string]: string }
+  )[field];
+};
+
 export const displayGroup = (field: keyof IGroup) => {
   return (
     displayUtilsDatatypesPrimaryID(field as any) ||
@@ -635,11 +703,11 @@ export const displayObjectObjectInfo = (field: keyof IObjectObjectInfo) => {
     {
       SHA256: "",
       "content-type": "",
-      createAt: "",
       isDir: "",
       name: "",
       path: "",
       size: "",
+      updatedAt: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -658,6 +726,14 @@ export const displayObjectObjectsCopyParam = (field: keyof IObjectObjectsCopyPar
     {
       file: "",
       targetPath: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayOpenapiObjectDataList = (field: keyof IOpenapiObjectDataList) => {
+  return (
+    {
+      data: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -819,6 +895,15 @@ export const displayRbacUserWithRole = (field: keyof IRbacUserWithRole) => {
   );
 };
 
+export const displayRepositoryClientWithSecret = (field: keyof IRepositoryClientWithSecret) => {
+  return (
+    {
+      clientID: "",
+      clientSecret: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
 export const displayUtilsDatatypesCreationTime = (field: keyof IUtilsDatatypesCreationTime) => {
   return (
     {
@@ -882,17 +967,15 @@ export const getGroup = createApiInstance<
 
 export const getObject = createApiInstance<
   {
-    authorization?: string;
     path: string;
-    "image-process"?: IProcessProcessCondition;
+    "image-process"?: IImageProcessProcessCondition;
   },
   null
->("storage.GetObject", ({ authorization: pAuthorization, path: pPath, "image-process": pImageProcess }) => {
+>("storage.GetObject", ({ path: pPath, "image-process": pImageProcess }) => {
   return {
     method: "GET",
-    url: `/api/storage/v0/objects/get`,
+    url: `/api/storage/v0/openapi/objects/get`,
     query: {
-      authorization: pAuthorization,
       path: pPath,
       "image-process": pImageProcess,
     },
@@ -973,6 +1056,27 @@ export const listAuthProvider = createApiInstance<void, IAuthProviderList>("stor
   return {
     method: "GET",
     url: `/api/storage/v0/auth-providers`,
+  };
+});
+
+export const listClient = createApiInstance<
+  {
+    authorization?: string;
+    clientID?: string | string[];
+    size?: number;
+    offset?: number;
+  },
+  IClientClientDataList
+>("storage.ListClient", ({ authorization: pAuthorization, clientID: pClientID, size: pSize, offset: pOffset }) => {
+  return {
+    method: "GET",
+    url: `/api/storage/v0/clients`,
+    query: {
+      authorization: pAuthorization,
+      clientID: pClientID,
+      size: pSize,
+      offset: pOffset,
+    },
   };
 });
 
@@ -1110,17 +1214,17 @@ export const listGroupAccount = createApiInstance<
 
 export const listObjects = createApiInstance<
   {
-    authorization?: string;
-    path: string;
+    dir: string;
+    onlyDir?: IDatatypesBool;
   },
-  IObjectObjectDataList
->("storage.ListObjects", ({ authorization: pAuthorization, path: pPath }) => {
+  IOpenapiObjectDataList
+>("storage.ListObjects", ({ dir: pDir, onlyDir: pOnlyDir }) => {
   return {
     method: "GET",
-    url: `/api/storage/v0/objects/list`,
+    url: `/api/storage/v0/openapi/objects/list`,
     query: {
-      authorization: pAuthorization,
-      path: pPath,
+      dir: pDir,
+      onlyDir: pOnlyDir,
     },
   };
 });
@@ -1316,6 +1420,43 @@ export const putAdmin = createApiInstance<
   };
 });
 
+export const putClient = createApiInstance<
+  {
+    authorization?: string;
+    clientID: string;
+    body: IClientClientInfo;
+  },
+  null
+>("storage.PutClient", ({ authorization: pAuthorization, clientID: pClientID, body: pBody }) => {
+  return {
+    method: "PUT",
+    url: `/api/storage/v0/clients/${pClientID}`,
+    data: pBody,
+    query: {
+      authorization: pAuthorization,
+    },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+});
+
+export const refreshClientSecret = createApiInstance<
+  {
+    authorization?: string;
+    clientID: string;
+  },
+  IRepositoryClientWithSecret
+>("storage.RefreshClientSecret", ({ authorization: pAuthorization, clientID: pClientID }) => {
+  return {
+    method: "PUT",
+    url: `/api/storage/v0/clients/${pClientID}/refresh-secret`,
+    query: {
+      authorization: pAuthorization,
+    },
+  };
+});
+
 export const refreshToken = createApiInstance<
   {
     body: IAuthRefreshTokenBody;
@@ -1501,6 +1642,23 @@ export interface IAuthToken {
   type: string;
 }
 
+export interface IClient
+  extends IUtilsDatatypesPrimaryID,
+    IClientClientInfo,
+    IUtilsDatatypesCreationUpdationDeletionTime {
+  clientID: string;
+}
+
+export interface IClientClientDataList {
+  data: IClient[];
+  total: number;
+}
+
+export interface IClientClientInfo {
+  desc: string;
+  whiteList?: IClientWhiteList;
+}
+
 export interface IGroup extends IUtilsDatatypesPrimaryID, IGroupGroupBase, IUtilsDatatypesCreationUpdationDeletionTime {
   groupID: IGroupGroupID;
 }
@@ -1572,11 +1730,11 @@ export interface IObjectObjectDataList {
 export interface IObjectObjectInfo {
   SHA256: string;
   "content-type": string;
-  createAt: number;
   isDir: IDatatypesBool;
   name: string;
   path: string;
   size: number;
+  updatedAt: number;
 }
 
 export interface IObjectObjectsCopyBody {
@@ -1587,6 +1745,10 @@ export interface IObjectObjectsCopyBody {
 export interface IObjectObjectsCopyParam {
   file: string[];
   targetPath: string;
+}
+
+export interface IOpenapiObjectDataList {
+  data: IObjectObjectInfo[];
 }
 
 export interface IOperationLogOperationUndoBody {
@@ -1649,6 +1811,11 @@ export interface IRbacUserWithRole extends IAccountUser {
   roles: IRbacAccountFull[];
 }
 
+export interface IRepositoryClientWithSecret {
+  clientID: string;
+  clientSecret: string;
+}
+
 export interface IUtilsDatatypesCreationTime {
   createdAt: IDatatypesTimestamp;
 }
@@ -1669,6 +1836,8 @@ export type IAuthOperatorCurrentUser = IAccountUser & {
   isAdmin: boolean;
 } & any;
 
+export type IClientWhiteList = string[];
+
 export type IDatatypesBool = string;
 
 export type IDatatypesTimestamp = string;
@@ -1676,6 +1845,8 @@ export type IDatatypesTimestamp = string;
 export type IGroupGroupID = string;
 
 export type IGroupRoleType = keyof typeof GroupRoleType;
+
+export type IImageProcessProcessCondition = string;
 
 export type IObjectDirID = string;
 
@@ -1686,7 +1857,5 @@ export type IOperationOperationType = keyof typeof OperationOperationType;
 export type IOperationState = keyof typeof OperationState;
 
 export type IOperationText = string;
-
-export type IProcessProcessCondition = string;
 
 export type IRbacRoleType = keyof typeof RbacRoleType;

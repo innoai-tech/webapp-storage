@@ -64,6 +64,12 @@ export const Sidenav = defineComponent({
           key: "log",
           show: currentUserStore.account?.isAdmin,
         },
+        {
+          icon: <ApartmentOutlined />,
+          label: "客户端管理",
+          key: "clientManage",
+          show: currentUserStore.account?.isAdmin,
+        },
       ];
       return (
         <div class={"base-layout-side flex-shrink-0 w-60 relative"}>

@@ -5,6 +5,7 @@ import { computed, createVNode, onMounted, unref } from "vue";
 import { displayOperationState, IOperationOperationLogWithUser } from "@src/src-clients/storage";
 import { useOperationLogStore } from "@src/pages/log/index";
 import { useMembersStore } from "@src/pages/member";
+import { TextEllipsis } from "@src/components/textEllipsis";
 
 export const useColumns = () => {
   const operationLogStore = useOperationLogStore();
@@ -80,11 +81,8 @@ export const useColumns = () => {
       dataKey: "desc",
       width: 200,
       cellRenderer({ rowData }: { rowData: IOperationOperationLogWithUser }) {
-        return (
-          <Tooltip title={rowData.desc}>
-            <span class={"text-ellipsis overflow-hidden whitespace-pre"}>{rowData.desc || "-"}</span>
-          </Tooltip>
-        );
+        if (!rowData.desc) return "-";
+        return <TextEllipsis>{rowData.desc}</TextEllipsis>;
       },
     },
     {

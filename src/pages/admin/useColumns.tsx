@@ -14,19 +14,7 @@ export const useColumns = () => {
       dataKey: "name",
       width: 300,
     },
-    {
-      title: "状态",
-      key: "state",
-      dataKey: "state",
-      width: 200,
-      cellRenderer({ rowData }: { rowData: IAdminUser }) {
-        return (
-          <span class={rowData.state === "ENABLE" ? "" : "text-gray-400"}>
-            {rowData.state === "ENABLE" ? "已启用" : "已禁用"}
-          </span>
-        );
-      },
-    },
+
     {
       title: "手机号",
       key: "mobile",
