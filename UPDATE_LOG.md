@@ -1,6 +1,5 @@
 # Updater Log
 
-## v0.0.6
+## v0.0.7
 
-- feat: xxx
-- fix: xxx
+- chore: 修复更新失败的问题

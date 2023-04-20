@@ -73,6 +73,7 @@ jobs:
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -87,22 +88,3 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "storage v__VERSION__" # tauri-action replaces \_\_VERSION\_\_ with the app version.
           releaseBody: "See the assets to download and install this version."
-
-  # 生成静态资源并将其推送到 github pages
-  updater:
-    runs-on: ubuntu-latest
-    needs: [create-release, build-tauri]
-
-    steps:
-      - uses: actions/checkout@v2
-      - run: yarn
-      - run: yarn updater
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Deploy install.json
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./updater
-          force_orphan: true
