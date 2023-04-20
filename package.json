@@ -9,7 +9,9 @@
     "tauri-dev": "tauri dev",
     "prepare": "husky install",
     "publish": "npm version ${npm_package_json_version} && git push origin --tags -f && npm publish",
-    "c": "ts-node --files src/plugins/client/index.ts"
+    "c": "ts-node --files src/plugins/client/index.ts",
+    "updater": "node scripts/updater.mjs",
+    "release": "node scripts/release.mjs"
   },
   "husky": {
     "hooks": {
@@ -27,6 +29,7 @@
     ]
   },
   "dependencies": {
+    "@actions/github": "^5.1.1",
     "@ant-design/icons-vue": "^6.1.0",
     "@rushstack/eslint-patch": "^1.2.0",
     "@tauri-apps/api": "^1.2.0",
@@ -43,6 +46,7 @@
     "hotkeys-js": "^3.10.1",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
+    "node-fetch": "^3.3.1",
     "p-queue": "^7.3.4",
     "pinia": "^2.0.33",
     "pinia-plugin-persist": "^1.0.0",
