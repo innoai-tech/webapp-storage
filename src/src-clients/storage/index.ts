@@ -541,6 +541,7 @@ export const displayClientClientInfo = (field: keyof IClientClientInfo) => {
   return (
     {
       desc: "描述",
+      permissions: "目录许可",
       whiteList: "IP 白名单",
     } as { [key: string]: string }
   )[field];
@@ -1692,6 +1693,7 @@ export interface IClientClientDataList {
 
 export interface IClientClientInfo {
   desc: string;
+  permissions?: IClientPermissions;
   whiteList?: IClientWhiteList;
 }
 
@@ -1872,9 +1874,11 @@ export type IAuthOperatorCurrentUser = IAccountUser & {
   isAdmin: boolean;
 } & any;
 
+export type IClientPermissions = string[];
+
 export type IClientWhiteList = string[];
 
-export type IDatatypesBool = string;
+export type IDatatypesBool = boolean;
 
 export type IDatatypesTimestamp = string;
 

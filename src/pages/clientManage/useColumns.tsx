@@ -1,13 +1,16 @@
-import { Button, Modal, Space, Tooltip } from "ant-design-vue";
+import { Button, message, Modal, Space, Tooltip } from "ant-design-vue";
 import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
-import { createVNode, unref } from "vue";
-import { IClient } from "@src/src-clients/storage";
+import { createVNode, ref, unref } from "vue";
+import { IClient, refreshClientSecret } from "@src/src-clients/storage";
 import { useClientsStore } from "@src/pages/clientManage/index";
 import { CreateClientModal } from "@src/pages/clientManage/CreateClient";
 import { TextEllipsis } from "@src/components/textEllipsis";
+import { useRequest } from "vue-request";
+import { SecretContent } from "@src/pages/clientManage/SecretContent";
 
 export const useColumns = () => {
   const clientsStore = useClientsStore();
+
   return [
     {
       title: "客户端ID",
@@ -40,6 +43,22 @@ export const useColumns = () => {
       cellRenderer({ rowData }: { rowData: IClient }) {
         return (
           <Space>
+            <Button
+              type={"link"}
+              onClick={() => {
+                Modal.confirm({
+                  title: "刷新密钥",
+                  closable: true,
+                  centered: true,
+                  content: createVNode(<SecretContent clientID={rowData.clientID} />),
+                  icon: createVNode(ExclamationCircleOutlined),
+                  cancelButtonProps: { style: { display: "none" } } as any,
+                  okButtonProps: { style: { display: "none" } } as any,
+                  wrapClassName: "confirmModal",
+                });
+              }}>
+              刷新密钥
+            </Button>
             <Button
               type={"link"}
               onClick={() => {

@@ -1,7 +1,7 @@
 import { generateClientFromConfig } from "@querycap-dev/generate-client"; //xx
 import * as path from "path";
-import { startsWith } from "lodash";
 import { APP_CONFIG, APP_MANIFEST, appConf } from "../../config";
+import { startsWith } from "@querycap/lodash";
 (async () => {
   const app = {
     GROUP: "sentry",

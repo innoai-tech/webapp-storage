@@ -44,8 +44,10 @@ export const useClientsStore = defineStore("adminStore", () => {
       {
         desc,
         whiteList,
+        permissions,
       }: {
         desc: string;
+        permissions: string[];
         whiteList: string[];
       },
     ) {
@@ -53,6 +55,7 @@ export const useClientsStore = defineStore("adminStore", () => {
         clientID,
         body: {
           desc: desc,
+          permissions,
           whiteList: whiteList,
         },
       });
@@ -80,7 +83,7 @@ export const ClientManage = defineComponent({
     const columns = useColumns();
     return () => {
       return (
-        <div>
+        <div class={"flex-1  flex flex-col"}>
           <div class={"flex justify-end sticky top-0 bg-white mb-4"}>
             <div class={"flex flex-1 justify-between"}>
               <div class={"flex gap-2"}>
@@ -89,7 +92,7 @@ export const ClientManage = defineComponent({
                   class={"flex items-center"}
                   onClick={() => {
                     Modal.confirm({
-                      title: "添加客户端",
+                      title: "",
                       closable: true,
                       centered: true,
                       content: createVNode(CreateClientModal),
@@ -115,9 +118,7 @@ export const ClientManage = defineComponent({
             </div>
           </div>
 
-          <div class={"flex-1"}>
-            <Table rowKey={"clientID"} columns={columns} data={data.value || []} />
-          </div>
+          <Table rowKey={"clientID"} columns={columns} data={data.value || []} />
         </div>
       );
     };

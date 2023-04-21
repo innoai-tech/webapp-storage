@@ -55,7 +55,6 @@ export const useDiskStore = defineStore("disk", () => {
 
   const { runAsync: getObjects } = useRequest(listObjects, {
     manual: true,
-    pollingInterval: 5000,
     debounceInterval: 100,
     onSuccess(res) {
       objects.value = res.data || [];
