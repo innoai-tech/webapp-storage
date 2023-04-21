@@ -153,7 +153,7 @@ export const CreateClientModal = defineComponent({
                   formState.value.whiteList.push({ id: uuid(), ip: "" });
                 }}>
                 <PlusOutlined />
-                Add user
+                添加 IP
               </Button>
             </FormItem>
 

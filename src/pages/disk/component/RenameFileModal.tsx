@@ -31,7 +31,7 @@ export const RenameFileModal = defineComponent({
       onSuccess() {
         diskStore.refreshFiles();
         Modal.destroyAll();
-        message.success("名称修改成功");
+        message.success("文件夹名称修改成功");
       },
       onAfter() {
         loading.value = false;
@@ -43,7 +43,7 @@ export const RenameFileModal = defineComponent({
       onSuccess() {
         diskStore.refreshFiles();
         Modal.destroyAll();
-        message.success("名称修改成功");
+        message.success("文件名称修改成功");
       },
       onAfter() {
         loading.value = false;

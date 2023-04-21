@@ -256,7 +256,7 @@ export const useColumns = () => {
                                 <RenameFileModal
                                   path={rowData.path}
                                   name={rowData.name}
-                                  mode={rowData.isDir === "DIR" ? "DIR" : "FILE"}
+                                  mode={rowData.isDir ? "DIR" : "FILE"}
                                 />,
                               ),
                               closable: true,
