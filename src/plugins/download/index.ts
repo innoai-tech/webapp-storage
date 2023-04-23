@@ -73,10 +73,6 @@ export const downloadDirs = async (dirs: IObjectObjectInfo[]) => {
   if (path?.length) {
     const _path = Array.isArray(path) ? path[0] : path;
     const _dirs = dirs.map((item) => {
-      const auth = getAuthorization();
-      const url = getObject.getConfig({
-        path: item.path,
-      }).url;
       const download: ITransmission = {
         id: uuid(),
         size: item.size,

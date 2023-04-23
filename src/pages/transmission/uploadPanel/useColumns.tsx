@@ -7,6 +7,7 @@ import { defineStore } from "pinia";
 import { useRouter } from "vue-router";
 import { usePathsStore } from "@src/pages/disk/store";
 import { ErrorModal } from "@src/pages/transmission/compoment/ErrorModal";
+import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
 
 export const useUploadPanelCheckedStore = defineStore("uploadPanelCheckedStore", () => {
   const checkedMap = ref<Record<string, boolean>>({});
@@ -149,7 +150,16 @@ export const useColumns = () => {
             type={"link"}
             danger
             onClick={() => {
-              transmissionStore.setUpload(transmissionStore.uploadList.filter((item) => item.id !== rowData.id));
+              Modal.confirm({
+                title: "提示",
+                closable: true,
+                wrapClassName: "contentModal",
+                icon: createVNode(ExclamationCircleOutlined),
+                content: "删除仅仅会删除记录而不会删除文件，如有需要请下载完成后再删除对应文件",
+                onOk() {
+                  transmissionStore.setUpload(transmissionStore.uploadList.filter((item) => item.id !== rowData.id));
+                },
+              });
             }}>
             删除
           </Button>

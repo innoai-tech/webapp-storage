@@ -21,10 +21,11 @@ export const DownloadingListPanel = defineComponent({
             disabled={!hasChecked.value}
             onClick={() => {
               Modal.confirm({
-                title: "是否确定删除这些下载记录?",
-                content: "删除下载记录并不会影响本地文件",
+                title: "提示",
                 closable: true,
+                wrapClassName: "contentModal",
                 icon: createVNode(ExclamationCircleOutlined),
+                content: "删除仅仅会删除记录而不会删除文件，如有需要请下载完成后再删除对应文件",
                 onOk() {
                   transmissionStore.downloadList = transmissionStore.downloadList.filter(
                     (item) => !store.checkedMap[item.id],

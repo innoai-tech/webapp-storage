@@ -27,9 +27,11 @@ export const FinishedPanel = defineComponent({
               disabled={!hasChecked.value}
               onClick={() => {
                 Modal.confirm({
-                  title: "是否确定删除这些传输记录?",
+                  title: "提示",
                   closable: true,
+                  wrapClassName: "contentModal",
                   icon: createVNode(ExclamationCircleOutlined),
+                  content: "删除仅仅会删除记录而不会删除文件，如有需要请下载完成后再删除对应文件",
                   onOk() {
                     transmissionStore.finishedList = transmissionStore.finishedList.filter(
                       (item) => !store.checkedMap[item.id],

@@ -10,6 +10,7 @@ import {
   MoreOutlined,
   RedoOutlined,
   UploadOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons-vue";
 import { TooltipButton } from "@src/components/tooltipsButton/index";
 import { CreateDirModal } from "@src/pages/disk/component/createDirModal";
@@ -269,14 +270,13 @@ export const DiskMenus = defineComponent({
             <Tooltip title={store.loading ? "刷新中..." : "刷新"}>
               <Button
                 class={"ml-2"}
-                loading={store.loading}
                 disabled={store.loading}
                 onClick={() => {
                   store.refreshFiles().then(() => {
                     message.success("已刷新");
                   });
                 }}>
-                <RedoOutlined />
+                {<RedoOutlined />}
               </Button>
             </Tooltip>
           </div>

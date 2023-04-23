@@ -235,43 +235,47 @@ pub async fn download_dir(
         let downloaded_file_count = downloaded_file_count.clone();
         let files_total_size = files_total_size.clone();
         let id = id.clone();
+        let _id = id.clone();
         let file_name = file_name.clone();
         let auth = auth.clone();
         let url = url.clone();
         let local_path = local_path.to_string().clone();
 
-        DOWNLOAD_CONCURRENT_QUEUE.push(move || {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async {
-                match download(
-                    url,
-                    local_path,
-                    auth,
-                    file_name,
-                    id.clone(),
-                    downloaded_size.clone(),
-                    files_total_size,
-                )
-                .await
-                {
-                    Ok(_) => {
-                        //  +1 并且获取一下值
-                        let count = downloaded_file_count.fetch_add(1, Ordering::Relaxed);
-                        // 获取的是 +1 前的值，所以手动+1 判断一下是否都下载完毕了
-                        if total_file_count.load(Ordering::Relaxed) == count + 1 {
-                            DOWNLOAD_COMPLETE_STORE
-                                .lock()
-                                .unwrap()
-                                .add(id.clone(), None);
+        DOWNLOAD_CONCURRENT_QUEUE.push(
+            move || {
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(async {
+                    match download(
+                        url,
+                        local_path,
+                        auth,
+                        file_name,
+                        id.clone(),
+                        downloaded_size.clone(),
+                        files_total_size,
+                    )
+                    .await
+                    {
+                        Ok(_) => {
+                            //  +1 并且获取一下值
+                            let count = downloaded_file_count.fetch_add(1, Ordering::Relaxed);
+                            // 获取的是 +1 前的值，所以手动+1 判断一下是否都下载完毕了
+                            if total_file_count.load(Ordering::Relaxed) == count + 1 {
+                                DOWNLOAD_COMPLETE_STORE
+                                    .lock()
+                                    .unwrap()
+                                    .add(id.clone(), None);
+                            }
                         }
-                    }
-                    Err(err) => {
-                        return Err(err);
-                    }
-                };
-                Ok(())
-            });
-        });
+                        Err(err) => {
+                            return Err(err);
+                        }
+                    };
+                    Ok(())
+                });
+            },
+            _id.clone(),
+        );
     }
     Ok(())
 }

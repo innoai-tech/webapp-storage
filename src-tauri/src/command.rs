@@ -36,55 +36,64 @@ pub async fn download_dirs(dirs_json_str: String) {
     // 解析传入的 JSON 字符串
     let params: DownloadDirsParams = serde_json::from_str(&dirs_json_str).unwrap();
     let dirs: Vec<DownloadDirsParamsData> = params.dirs;
+    // 遍历文件列表，将每个文件的上传任务加入上传队列
     let get_files_base_url = params.get_files_base_url;
     let download_files_base_url = params.download_files_base_url;
     let local_path = params.local_path;
     let auth = params.auth;
-    let rt = tokio::runtime::Runtime::new().unwrap();
     let downloaded_file_count = Arc::new(AtomicU64::new(0));
-    // 遍历文件列表，将每个文件的上传任务加入上传队列
-    UPLOAD_CONCURRENT_QUEUE.push(move || {
-        rt.block_on(async {
-            for dir in dirs {
-                let id = dir.id.clone();
+    for dir in dirs {
+        let id = dir.id.clone();
+        let _id = id.clone();
+        let get_files_base_url = get_files_base_url.clone();
+        let download_files_base_url = download_files_base_url.clone();
+        let local_path = local_path.clone();
+        let auth = auth.clone();
+        let downloaded_file_count = downloaded_file_count.clone();
 
-                let total_file_count = Arc::new(AtomicU64::new(0));
-                match download_dir(
-                    get_files_base_url.clone(),
-                    download_files_base_url.clone(),
-                    dir.name.clone(),
-                    dir.path.clone(),
-                    local_path.clone(),
-                    auth.clone(),
-                    id.clone(),
-                    total_file_count.clone(),
-                )
-                .await
-                {
-                    Ok(_) => {}
-                    Err(err) => {
-                        let err_str = format!("ID:{} \n \n  DOWNLOAD ERR: {}", id.clone(), err);
-                        // 失败的时候判断一下下载完了吗，下载完了就结束，没下载完插入一个错误信息
-                        let count = downloaded_file_count.fetch_add(1, Ordering::Relaxed);
-                        // 获取的是 -1 前的值，所以手动-1 判断一下是否都下载完毕了
-                        println!("{}", count);
-                        if total_file_count.load(Ordering::Relaxed) == count + 1 {
-                            DOWNLOAD_COMPLETE_STORE
-                                .lock()
-                                .unwrap()
-                                .add(id.clone(), Some(err_str.clone()));
-                        } else {
-                            DOWNLOAD_PROGRESS_STORE.lock().unwrap().add(
-                                id.clone(),
-                                None,
-                                Some(err_str.clone()),
-                            );
+        UPLOAD_CONCURRENT_QUEUE.push(
+            move || {
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(async {
+                    let total_file_count = Arc::new(AtomicU64::new(0));
+                    match download_dir(
+                        get_files_base_url.clone(),
+                        download_files_base_url.clone(),
+                        dir.name.clone(),
+                        dir.path.clone(),
+                        local_path.clone(),
+                        auth.clone(),
+                        id.clone(),
+                        total_file_count.clone(),
+                    )
+                    .await
+                    {
+                        Ok(_) => {}
+                        Err(err) => {
+                            let err_str = format!("ID:{} \n \n  DOWNLOAD ERR: {}", id.clone(), err);
+                            // 失败的时候判断一下下载完了吗，下载完了就结束，没下载完插入一个错误信息
+                            let count = downloaded_file_count.fetch_add(1, Ordering::Relaxed);
+                            // 获取的是 -1 前的值，所以手动-1 判断一下是否都下载完毕了
+                            println!("{}", count);
+                            if total_file_count.load(Ordering::Relaxed) == count + 1 {
+                                DOWNLOAD_COMPLETE_STORE
+                                    .lock()
+                                    .unwrap()
+                                    .add(id.clone(), Some(err_str.clone()));
+                            } else {
+                                DOWNLOAD_PROGRESS_STORE.lock().unwrap().add(
+                                    id.clone(),
+                                    None,
+                                    Some(err_str.clone()),
+                                );
+                            }
                         }
                     }
-                }
-            }
-        })
-    });
+                })
+            },
+            _id.clone(),
+        );
+    }
 }
 
 // 文件批量下载
@@ -108,50 +117,54 @@ pub async fn download_files(files_json_str: String) -> String {
         let size = file.size.clone();
         let auth = file.auth.clone();
         let id = file.id.clone();
+        let _id = id.clone();
         let file_name = file.file_name.clone();
         let url = file.url.clone();
         let local_path = file.local_path.clone();
 
-        DOWNLOAD_CONCURRENT_QUEUE.push(move || {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async {
-                let _local_path = local_path.clone();
-                match download(
-                    url,
-                    local_path,
-                    auth,
-                    file_name,
-                    id.clone(),
-                    Arc::new(AtomicU64::new(0)),
-                    size.clone(),
-                )
-                .await
-                {
-                    Ok(_) => {
-                        DOWNLOAD_COMPLETE_STORE
-                            .lock()
-                            .unwrap()
-                            .add(id.clone(), None);
-                    }
-                    Err(err) => {
-                        let err_str = format!(
-                            "ID:{} \n PATH:{} \n  UPLOAD ERR: {}",
-                            id.clone(),
-                            _local_path.to_string().clone(),
-                            err
-                        );
+        DOWNLOAD_CONCURRENT_QUEUE.push(
+            move || {
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(async {
+                    let _local_path = local_path.clone();
+                    match download(
+                        url,
+                        local_path,
+                        auth,
+                        file_name,
+                        id.clone(),
+                        Arc::new(AtomicU64::new(0)),
+                        size.clone(),
+                    )
+                    .await
+                    {
+                        Ok(_) => {
+                            DOWNLOAD_COMPLETE_STORE
+                                .lock()
+                                .unwrap()
+                                .add(id.clone(), None);
+                        }
+                        Err(err) => {
+                            let err_str = format!(
+                                "ID:{} \n PATH:{} \n  UPLOAD ERR: {}",
+                                id.clone(),
+                                _local_path.to_string().clone(),
+                                err
+                            );
 
-                        // 多个文件错一个继续下载，但是插入一条错误信息
-                        DOWNLOAD_COMPLETE_STORE
-                            .lock()
-                            .unwrap()
-                            .add(id.clone(), Some(err_str.clone()));
+                            // 多个文件错一个继续下载，但是插入一条错误信息
+                            DOWNLOAD_COMPLETE_STORE
+                                .lock()
+                                .unwrap()
+                                .add(id.clone(), Some(err_str.clone()));
 
-                        eprintln!("UPLOAD ERR: {}", err_str)
+                            eprintln!("UPLOAD ERR: {}", err_str)
+                        }
                     }
-                }
-            });
-        });
+                });
+            },
+            _id.clone(),
+        );
     }
     "ok".to_string()
 }
@@ -167,52 +180,56 @@ pub async fn upload_file(
     id: String,
     window: tauri::Window,
 ) {
+    let _id = id.clone();
     let rt = tokio::runtime::Runtime::new().unwrap();
     // 将上传任务加入上传队列
-    UPLOAD_CONCURRENT_QUEUE.push(move || {
-        rt.block_on(async {
-            // 获取文件大小，并设置进度相关的变量
-            match get_file_size(&local_path) {
-                Ok(size) => {
-                    let uploaded_len = Arc::new(AtomicU64::new(0));
-                    let total_len = Arc::new(AtomicU64::new(size));
-                    let _local_path = local_path.clone();
-                    match upload(
-                        url,
-                        check_object_url.clone(),
-                        origin_path,
-                        local_path,
-                        auth,
-                        id.clone(),
-                        uploaded_len,
-                        total_len,
-                        window,
-                    )
-                    .await
-                    {
-                        Ok(_) => {
-                            UPLOAD_COMPLETE_STORE.lock().unwrap().add(id.clone(), None);
-                        }
-                        Err(err) => {
-                            let err_str = format!(
-                                "ID:{} \n PATH:{} \n  UPLOAD ERR: {}",
-                                id.clone(),
-                                _local_path.to_string().clone(),
-                                err
-                            );
-                            // 文件的错误直接结束，并且放入错误信息
-                            UPLOAD_COMPLETE_STORE
-                                .lock()
-                                .unwrap()
-                                .add(id.clone(), Some(err_str.clone()));
-                            eprintln!("UPLOAD ERR: {}", err_str)
+    UPLOAD_CONCURRENT_QUEUE.push(
+        move || {
+            rt.block_on(async {
+                // 获取文件大小，并设置进度相关的变量
+                match get_file_size(&local_path) {
+                    Ok(size) => {
+                        let uploaded_len = Arc::new(AtomicU64::new(0));
+                        let total_len = Arc::new(AtomicU64::new(size));
+                        let _local_path = local_path.clone();
+                        match upload(
+                            url,
+                            check_object_url.clone(),
+                            origin_path,
+                            local_path,
+                            auth,
+                            id.clone(),
+                            uploaded_len,
+                            total_len,
+                            window,
+                        )
+                        .await
+                        {
+                            Ok(_) => {
+                                UPLOAD_COMPLETE_STORE.lock().unwrap().add(id.clone(), None);
+                            }
+                            Err(err) => {
+                                let err_str = format!(
+                                    "ID:{} \n PATH:{} \n  UPLOAD ERR: {}",
+                                    id.clone(),
+                                    _local_path.to_string().clone(),
+                                    err
+                                );
+                                // 文件的错误直接结束，并且放入错误信息
+                                UPLOAD_COMPLETE_STORE
+                                    .lock()
+                                    .unwrap()
+                                    .add(id.clone(), Some(err_str.clone()));
+                                eprintln!("UPLOAD ERR: {}", err_str)
+                            }
                         }
                     }
+                    Err(e) => eprintln!("Error: {:?}", e),
                 }
-                Err(e) => eprintln!("Error: {:?}", e),
-            }
-        });
-    });
+            });
+        },
+        _id.clone(),
+    );
 }
 
 // 文件批量上传
@@ -236,57 +253,61 @@ pub async fn upload_files(files_json_str: String, window: tauri::Window) {
         let auth = file.auth.clone();
         let origin_path = file.origin_path.clone();
         let id = file.id.clone();
+        let _id = id.clone();
         let url = file.url.clone();
         let local_path = file.local_path.clone();
         let check_object_url = file.check_object_url.clone();
         let window = window.clone();
-        UPLOAD_CONCURRENT_QUEUE.push(move || {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async {
-                // 获取文件大小，并设置进度相关的变量
-                match get_file_size(&local_path) {
-                    Ok(size) => {
-                        let uploaded_size_len = Arc::new(AtomicU64::new(0));
-                        let total_size_len = Arc::new(AtomicU64::new(size));
-                        let _local_path = local_path.clone();
-                        match upload(
-                            url,
-                            check_object_url,
-                            origin_path,
-                            local_path,
-                            auth,
-                            id.clone(),
-                            uploaded_size_len,
-                            total_size_len,
-                            window,
-                        )
-                        .await
-                        {
-                            Ok(_) => {
-                                UPLOAD_COMPLETE_STORE.lock().unwrap().add(id.clone(), None);
-                            }
-                            Err(err) => {
-                                let err_str = format!(
-                                    "ID:{} \n PATH:{} \n  UPLOAD ERR: {}",
-                                    id.clone(),
-                                    _local_path.to_string().clone(),
-                                    err
-                                );
+        UPLOAD_CONCURRENT_QUEUE.push(
+            move || {
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(async {
+                    // 获取文件大小，并设置进度相关的变量
+                    match get_file_size(&local_path) {
+                        Ok(size) => {
+                            let uploaded_size_len = Arc::new(AtomicU64::new(0));
+                            let total_size_len = Arc::new(AtomicU64::new(size));
+                            let _local_path = local_path.clone();
+                            match upload(
+                                url,
+                                check_object_url,
+                                origin_path,
+                                local_path,
+                                auth,
+                                id.clone(),
+                                uploaded_size_len,
+                                total_size_len,
+                                window,
+                            )
+                            .await
+                            {
+                                Ok(_) => {
+                                    UPLOAD_COMPLETE_STORE.lock().unwrap().add(id.clone(), None);
+                                }
+                                Err(err) => {
+                                    let err_str = format!(
+                                        "ID:{} \n PATH:{} \n  UPLOAD ERR: {}",
+                                        id.clone(),
+                                        _local_path.to_string().clone(),
+                                        err
+                                    );
 
-                                // 多个文件错一个继续上传，但是插入一条错误信息
-                                UPLOAD_COMPLETE_STORE
-                                    .lock()
-                                    .unwrap()
-                                    .add(id.clone(), Some(err_str.clone()));
+                                    // 多个文件错一个继续上传，但是插入一条错误信息
+                                    UPLOAD_COMPLETE_STORE
+                                        .lock()
+                                        .unwrap()
+                                        .add(id.clone(), Some(err_str.clone()));
 
-                                eprintln!("UPLOAD ERR: {}", err_str)
+                                    eprintln!("UPLOAD ERR: {}", err_str)
+                                }
                             }
                         }
+                        Err(e) => eprintln!("Error: {:?}", e),
                     }
-                    Err(e) => eprintln!("Error: {:?}", e),
-                }
-            });
-        });
+                });
+            },
+            _id.clone(),
+        );
     }
 }
 
@@ -366,50 +387,53 @@ pub async fn upload_dir(
         // 总数+1
         total_file_count.fetch_add(1, Ordering::Relaxed);
         // 将每个文件的上传任务加入上传队列
-        UPLOAD_CONCURRENT_QUEUE.push(move || {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async {
-                let path = _path.clone();
-                match upload(
-                    _url,
-                    _check_object_url,
-                    _origin_path,
-                    _path,
-                    _auth,
-                    _id.clone(),
-                    uploaded_len_clone_inner,
-                    total_len_clone_inner.clone(),
-                    _window,
-                )
-                .await
-                {
-                    Ok(_) => {}
-                    Err(err) => {
-                        let err_str = format!(
-                            "ID:{}\nPATH:{}\nUPLOAD ERR: {}",
-                            _id.clone(),
-                            path.to_string().clone(),
-                            err
-                        );
-                        // 文件夹错误继续上传，但是插入一条错误信息
-                        UPLOAD_PROGRESS_STORE.lock().unwrap().add(
-                            _id.clone(),
-                            None,
-                            Some(err_str.clone()),
-                        );
-                        println!("UPLOAD ERR: {}", err)
+        UPLOAD_CONCURRENT_QUEUE.push(
+            move || {
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(async {
+                    let path = _path.clone();
+                    match upload(
+                        _url,
+                        _check_object_url,
+                        _origin_path,
+                        _path,
+                        _auth,
+                        _id.clone(),
+                        uploaded_len_clone_inner,
+                        total_len_clone_inner.clone(),
+                        _window,
+                    )
+                    .await
+                    {
+                        Ok(_) => {}
+                        Err(err) => {
+                            let err_str = format!(
+                                "ID:{}\nPATH:{}\nUPLOAD ERR: {}",
+                                _id.clone(),
+                                path.to_string().clone(),
+                                err
+                            );
+                            // 文件夹错误继续上传，但是插入一条错误信息
+                            UPLOAD_PROGRESS_STORE.lock().unwrap().add(
+                                _id.clone(),
+                                None,
+                                Some(err_str.clone()),
+                            );
+                            println!("UPLOAD ERR: {}", err)
+                        }
                     }
-                }
-                // 上传完毕判断一下，甭管成功失败都+1，当所有传输完毕，哪怕有失败的进度没到 100%也给扔进已完成去
-                let current_complete_len =
-                    _current_complete_file_count.fetch_add(1, Ordering::Relaxed) + 1;
-                let total_len = _total_file_count.load(Ordering::Relaxed);
-                println!("总共：{}, 当前已上传 {}", total_len, current_complete_len);
-                if current_complete_len == _total_file_count.load(Ordering::Relaxed) {
-                    UPLOAD_COMPLETE_STORE.lock().unwrap().add(_id.clone(), None);
-                }
-            });
-        });
+                    // 上传完毕判断一下，甭管成功失败都+1，当所有传输完毕，哪怕有失败的进度没到 100%也给扔进已完成去
+                    let current_complete_len =
+                        _current_complete_file_count.fetch_add(1, Ordering::Relaxed) + 1;
+                    let total_len = _total_file_count.load(Ordering::Relaxed);
+                    println!("总共：{}, 当前已上传 {}", total_len, current_complete_len);
+                    if current_complete_len == _total_file_count.load(Ordering::Relaxed) {
+                        UPLOAD_COMPLETE_STORE.lock().unwrap().add(_id.clone(), None);
+                    }
+                });
+            },
+            id.clone(),
+        );
     }
 }
 
