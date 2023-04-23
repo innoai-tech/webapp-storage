@@ -8,6 +8,7 @@ import { useRouter } from "vue-router";
 import { usePathsStore } from "@src/pages/disk/store";
 import { ErrorModal } from "@src/pages/transmission/compoment/ErrorModal";
 import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
+import { invoke } from "@tauri-apps/api/tauri";
 
 export const useUploadPanelCheckedStore = defineStore("uploadPanelCheckedStore", () => {
   const checkedMap = ref<Record<string, boolean>>({});
@@ -158,6 +159,7 @@ export const useColumns = () => {
                 content: "删除仅仅会删除记录而不会删除文件，如有需要请下载完成后再删除对应文件",
                 onOk() {
                   transmissionStore.setUpload(transmissionStore.uploadList.filter((item) => item.id !== rowData.id));
+                  invoke("remove_upload_task", { ids: [rowData.id] });
                 },
               });
             }}>

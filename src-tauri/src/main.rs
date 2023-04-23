@@ -21,6 +21,8 @@ async fn main() {
             command::open_folder,
             command::upload_file,
             command::upload_files,
+            command::remove_upload_task,
+            command::remove_download_task,
             emit::emit_every_second
         ])
         .run(tauri::generate_context!())

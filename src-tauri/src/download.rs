@@ -121,10 +121,16 @@ pub async fn download_core(
     // 将下载完成的文件重命名
     let new_file_path = Path::new(&local_path).join(&file_name);
     if new_file_path.exists() {
-        std::fs::remove_file(&new_file_path).expect("删除已存在的文件失败");
+        match fs::remove_file(&new_file_path) {
+            Ok(res) => res,
+            Err(e) => println!("Error 删除文件失败: {}", e),
+        }
     }
 
-    std::fs::rename(&file_path, &new_file_path).expect("文件重命名失败");
+    match fs::rename(&file_path, &new_file_path) {
+        Ok(res) => res,
+        Err(e) => println!("Error 重命名文件失败: {}", e),
+    }
 
     Ok(())
 }

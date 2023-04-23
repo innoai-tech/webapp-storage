@@ -4,6 +4,7 @@ import { Table } from "@src/components/table";
 import { useColumns, useDownloadedPanelCheckedStore } from "@src/pages/transmission/downloadPanel/useColumns";
 import { Button, Modal, Pagination } from "ant-design-vue";
 import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
+import { invoke } from "@tauri-apps/api/tauri";
 
 export const DownloadingListPanel = defineComponent({
   setup() {
@@ -31,6 +32,9 @@ export const DownloadingListPanel = defineComponent({
                     (item) => !store.checkedMap[item.id],
                   );
                   store.checkedMap = {};
+
+                  const checkedList = transmissionStore.downloadList.filter((item) => store.checkedMap[item.id]);
+                  invoke("remove_download_task", { ids: checkedList.map((task) => task.id) });
                 },
               });
             }}>

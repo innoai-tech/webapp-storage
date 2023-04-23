@@ -5,7 +5,7 @@ import { useCurrentPath, useDiskStore, usePathsStore } from "@src/pages/disk/sto
 import { computed, unref, createVNode, getCurrentInstance } from "vue";
 import { ExclamationCircleOutlined, MoreOutlined } from "@ant-design/icons-vue";
 import { Button, Checkbox, Dropdown, Menu, MenuItem, message, Modal, Tooltip } from "ant-design-vue";
-import { downloadFiles } from "@src/plugins/download";
+import { downloadDirs, downloadFiles } from "@src/plugins/download";
 import { CopyAndMoveDirFilesModal } from "@src/components/selectDirModal";
 import { useRequest } from "vue-request";
 import { RenameFileModal } from "@src/pages/disk/component/RenameFileModal";
@@ -177,17 +177,18 @@ export const useColumns = () => {
               </Button>
             </Tooltip>
 
-            <Tooltip title={rowData.isDir ? "文件夹无法下载" : ""}>
-              <Button
-                class={"ml-2"}
-                type={"link"}
-                disabled={!!rowData.isDir}
-                onClick={() => {
+            <Button
+              class={"ml-2"}
+              type={"link"}
+              onClick={() => {
+                if (rowData.isDir) {
+                  downloadDirs([rowData]);
+                } else {
                   downloadFiles([rowData]);
-                }}>
-                下载
-              </Button>
-            </Tooltip>
+                }
+              }}>
+              下载
+            </Button>
 
             <Dropdown
               trigger={"click"}

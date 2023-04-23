@@ -427,6 +427,7 @@ pub async fn upload_dir(
                         _current_complete_file_count.fetch_add(1, Ordering::Relaxed) + 1;
                     let total_len = _total_file_count.load(Ordering::Relaxed);
                     println!("总共：{}, 当前已上传 {}", total_len, current_complete_len);
+
                     if current_complete_len == _total_file_count.load(Ordering::Relaxed) {
                         UPLOAD_COMPLETE_STORE.lock().unwrap().add(_id.clone(), None);
                     }
@@ -507,4 +508,16 @@ pub fn open_folder(path: String) -> String {
 pub fn replace_file_name(name: &str) -> String {
     let replaced_name = name.replace(":", "：");
     String::from(replaced_name)
+}
+
+// 取消上传
+#[tauri::command]
+pub fn remove_download_task(ids: Vec<String>) {
+    println!("remove task ids: {:?}", ids);
+    UPLOAD_CONCURRENT_QUEUE.add_invalid_ids(ids)
+}
+// 取消下载
+#[tauri::command]
+pub fn remove_upload_task(ids: Vec<String>) {
+    DOWNLOAD_CONCURRENT_QUEUE.add_invalid_ids(ids)
 }

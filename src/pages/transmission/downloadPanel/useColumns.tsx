@@ -155,6 +155,7 @@ export const useColumns = () => {
                   transmissionStore.setDownload(
                     transmissionStore.downloadList.filter((item) => item.id !== rowData.id),
                   );
+                  invoke("remove_download_task", { ids: [rowData.id] });
                 },
               });
             }}>

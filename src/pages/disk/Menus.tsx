@@ -10,7 +10,6 @@ import {
   MoreOutlined,
   RedoOutlined,
   UploadOutlined,
-  LoadingOutlined,
 } from "@ant-design/icons-vue";
 import { TooltipButton } from "@src/components/tooltipsButton/index";
 import { CreateDirModal } from "@src/pages/disk/component/createDirModal";

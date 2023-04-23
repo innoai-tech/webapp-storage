@@ -185,7 +185,7 @@ pub async fn upload_core(
     };
 
     let reset_upload_len = move || {
-        //上传失败减去本次上传的进度
+        //减去本次上传的进度(上传中添加的进度只是为了实时展示，试试上传完毕会重新添加整个文件的进去，就删除上传中的这部分避免重复添加)
         let len = before_upload_len.load(Ordering::Relaxed);
         uploaded_len.fetch_sub(len, Ordering::Relaxed);
     };
@@ -200,6 +200,8 @@ pub async fn upload_core(
         .await
     {
         Ok(res) => {
+            reset_upload_len();
+
             if res.status().is_success() || res.status() == 400 {
                 return Ok(());
             } else {
@@ -214,7 +216,6 @@ pub async fn upload_core(
                     ),
                 };
 
-                reset_upload_len();
                 return Err(Box::new(err));
             }
         }
@@ -246,6 +247,13 @@ pub async fn upload(
     window: tauri::Window,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut retry_count: u64 = 0;
+    let file_size = match metadata(local_path.clone()) {
+        Ok(metadata) => metadata.len(),
+        Err(e) => {
+            eprintln!("获取 file size 失败 {:?}", e);
+            return Err(Box::new(e));
+        }
+    };
     loop {
         match upload_core(
             url.clone(),
@@ -261,6 +269,14 @@ pub async fn upload(
         .await
         {
             Ok(res) => {
+                let total = total_len.load(Ordering::Relaxed);
+                uploaded_len.fetch_add(file_size, Ordering::Relaxed);
+                let new_len = uploaded_len.load(Ordering::Relaxed);
+                UPLOAD_PROGRESS_STORE.lock().unwrap().add(
+                    id.clone(),
+                    Some(new_len.clone() as f32 / total.clone() as f32),
+                    None,
+                );
                 return Ok(res);
             }
             Err(e) => {
@@ -272,15 +288,7 @@ pub async fn upload(
                     println!("上传失败重试中... ({}/3), {}", retry_count, timestamp);
                 } else {
                     println!("彻底失败了");
-                    // 重试之后依旧失败也要更新已上传长度
                     let total = total_len.load(Ordering::Relaxed);
-                    let file_size = match metadata(local_path.clone()) {
-                        Ok(metadata) => metadata.len(),
-                        Err(e) => {
-                            eprintln!("获取 file size 失败 {:?}", e);
-                            return Err(Box::new(e));
-                        }
-                    };
                     uploaded_len.fetch_add(file_size, Ordering::Relaxed);
                     let new_len = uploaded_len.load(Ordering::Relaxed);
                     UPLOAD_PROGRESS_STORE.lock().unwrap().add(
@@ -288,7 +296,6 @@ pub async fn upload(
                         Some(new_len as f32 / total.clone() as f32),
                         None,
                     );
-
                     return Err(e);
                 }
             }

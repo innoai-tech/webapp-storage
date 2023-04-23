@@ -4,6 +4,7 @@ import { Table } from "@src/components/table";
 import { useColumns, useUploadPanelCheckedStore } from "@src/pages/transmission/uploadPanel/useColumns";
 import { Button, Modal } from "ant-design-vue";
 import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
+import { invoke } from "@tauri-apps/api/tauri";
 
 export const UploadingListPanel = defineComponent({
   setup() {
@@ -26,10 +27,12 @@ export const UploadingListPanel = defineComponent({
                 icon: createVNode(ExclamationCircleOutlined),
                 content: "删除仅仅会删除记录而不会删除文件，如有需要请下载完成后再删除对应文件",
                 onOk() {
+                  const checkedList = transmissionStore.uploadList.filter((item) => store.checkedMap[item.id]);
                   transmissionStore.uploadList = transmissionStore.uploadList.filter(
                     (item) => !store.checkedMap[item.id],
                   );
                   store.checkedMap = {};
+                  invoke("remove_upload_task", { ids: checkedList.map((task) => task.id) });
                 },
               });
             }}>
