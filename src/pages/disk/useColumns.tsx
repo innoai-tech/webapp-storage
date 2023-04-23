@@ -68,7 +68,7 @@ export const useColumns = () => {
           const newMap = unref(checkedMap.value);
           const value = e.target.checked;
           newMap[rowData.path] = value as boolean;
-          store.setCheckedMap(newMap);
+          store.setCheckedMap({ ...newMap });
         };
         return <Checkbox onChange={onChange} checked={checkedMap.value[rowData.path]} />;
       },
@@ -101,14 +101,14 @@ export const useColumns = () => {
       dataKey: "name",
       width: 400,
       cellRenderer({ rowData }: { rowData: IObjectObjectInfo }) {
-        const isImage = rowData["content-type"]?.includes("image");
+        const isImg = isImage(rowData["content-type"]);
         return (
           <span
-            class={`flex items-center gap-2 w-full ${rowData.isDir || isImage ? "hover:underline cursor-pointer" : ""}`}
+            class={`flex items-center gap-2 w-full ${rowData.isDir || isImg ? "hover:underline cursor-pointer" : ""}`}
             onClick={() => {
               if (rowData.isDir) {
                 pathsStore.setPaths(store.goToPath(rowData.path));
-              } else if (isImage) {
+              } else if (isImg) {
                 imagesViewerStore.setCurrentPath(rowData.path);
               }
             }}>
@@ -307,7 +307,7 @@ export const useColumns = () => {
                                 const clearCheckedMap = () => {
                                   const map = unref(store.checkedMap);
                                   delete map[rowData.path];
-                                  store.setCheckedMap(map);
+                                  store.setCheckedMap({ ...map });
                                 };
                                 if (rowData.isDir) {
                                   return dirDelete({ path: rowData.path }).then(clearCheckedMap);

@@ -228,7 +228,7 @@ function useColumns() {
                 hasPermission={dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"}
                 type={"link"}
                 class={"p-0"}>
-                {rowData.roleType ? "修改权限" : "添加权限"}
+                {rowData.roleType ? "修改角色" : "添加角色"}
                 <DownOutlined />
               </AuthButton>
             </Dropdown>

@@ -1,20 +1,28 @@
 import { toFullTime } from "@src/utils/date";
-import { Button, Checkbox, Modal, Tooltip } from "ant-design-vue";
+import { Button, Checkbox, message, Modal, Tooltip } from "ant-design-vue";
 import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
-import { computed, createVNode, onMounted, unref } from "vue";
-import { displayOperationState, IOperationOperationLogWithUser } from "@src/src-clients/storage";
-import { useOperationLogStore } from "@src/pages/log/index";
+import { computed, createVNode, onMounted, Ref, unref } from "vue";
+import {
+  displayOperationOperationState,
+  IOperationOperationLog,
+  IOperationOperationLogDataList,
+  operationUndo,
+} from "@src/src-clients/storage";
 import { useMembersStore } from "@src/pages/member";
 import { TextEllipsis } from "@src/components/textEllipsis";
+import { useRequest } from "vue-request";
 
-export const useColumns = () => {
-  const operationLogStore = useOperationLogStore();
-  const checkedMap = computed(() => operationLogStore.checkedMap);
+export const useColumns = ({
+  logs,
+  checkedMap,
+  refresh,
+}: {
+  logs: Ref<IOperationOperationLogDataList | undefined>;
+  checkedMap: Ref<Record<string, boolean>>;
+  refresh: () => void;
+}) => {
   const allSelected = computed(() => {
-    return (
-      !!operationLogStore.logs?.data.length &&
-      !operationLogStore.logs?.data?.filter((log) => !checkedMap.value[log.operationID])?.length
-    );
+    return !!logs.value?.data.length && !logs.value?.data?.filter((log) => !checkedMap.value[log.operationID])?.length;
   });
   const members = useMembersStore();
   const memberMap = computed(() => members.members?.data?.reduce((p, c) => ({ ...p, [c.accountID]: c }), {}));
@@ -25,20 +33,28 @@ export const useColumns = () => {
     members.getMembers();
   });
 
+  const { runAsync: undo } = useRequest(operationUndo, {
+    manual: true,
+    onSuccess() {
+      refresh();
+      message.success("撤销成功");
+    },
+  });
+
   return [
     {
       key: "selection",
       width: 50,
-      cellRenderer: ({ rowData }: { rowData: IOperationOperationLogWithUser }) => {
+      cellRenderer: ({ rowData }: { rowData: IOperationOperationLog }) => {
         const onChange = (e) => {
           const newMap = unref(checkedMap.value);
           const value = e.target.checked;
-          newMap[rowData.operationID] = value as boolean;
-          operationLogStore.setCheckedMap(newMap);
+          newMap[rowData.logID] = value as boolean;
+          checkedMap.value = { ...newMap };
         };
         return (
           <Tooltip title={rowData.state === "DO" ? "" : "重做的操作无法选中"}>
-            <Checkbox onChange={onChange} checked={checkedMap.value[rowData.operationID]} />
+            <Checkbox onChange={onChange} checked={checkedMap.value[rowData.logID]} />
           </Tooltip>
         );
       },
@@ -47,10 +63,10 @@ export const useColumns = () => {
         const onChange = (e) => {
           const value = e.target.checked;
           const newMap = unref(checkedMap.value);
-          operationLogStore.logs?.data?.forEach((log) => {
+          logs.value?.data?.forEach((log) => {
             newMap[log.operationID] = value;
           });
-          operationLogStore.setCheckedMap(newMap);
+          checkedMap.value = { ...newMap };
         };
 
         return (
@@ -63,24 +79,11 @@ export const useColumns = () => {
       },
     },
     {
-      title: "成员名称",
-      key: "accountID",
-      dataKey: "accountID",
-      width: 300,
-      cellRenderer({ rowData }: { rowData: IOperationOperationLogWithUser }) {
-        return (
-          <span class={"text-ellipsis overflow-hidden whitespace-pre"}>
-            {memberMap.value?.[rowData.accountID]?.name || "-"}
-          </span>
-        );
-      },
-    },
-    {
       title: "描述信息",
       key: "desc",
       dataKey: "desc",
       width: 200,
-      cellRenderer({ rowData }: { rowData: IOperationOperationLogWithUser }) {
+      cellRenderer({ rowData }: { rowData: IOperationOperationLog }) {
         if (!rowData.desc) return "-";
         return <TextEllipsis>{rowData.desc}</TextEllipsis>;
       },
@@ -91,8 +94,8 @@ export const useColumns = () => {
       dataKey: "状态",
       width: 200,
       align: "center" as const,
-      cellRenderer({ rowData }: { rowData: IOperationOperationLogWithUser }) {
-        return <span>{displayOperationState(rowData.state) || "-"}</span>;
+      cellRenderer({ rowData }: { rowData: IOperationOperationLog }) {
+        return <span>{displayOperationOperationState(rowData.state) || "-"}</span>;
       },
     },
     {
@@ -100,7 +103,7 @@ export const useColumns = () => {
       key: "createdAt",
       dataKey: "createdAt",
       width: 200,
-      cellRenderer({ rowData }: { rowData: IOperationOperationLogWithUser }) {
+      cellRenderer({ rowData }: { rowData: IOperationOperationLog }) {
         return <span>{toFullTime(rowData.updatedAt)}</span>;
       },
     },
@@ -109,10 +112,10 @@ export const useColumns = () => {
       key: "name",
       dataKey: "name",
       width: 200,
-      cellRenderer({ rowData }: { rowData: IOperationOperationLogWithUser }) {
+      cellRenderer({ rowData }: { rowData: IOperationOperationLog }) {
         return (
           <div class={"gap-2 flex items-center"}>
-            <Tooltip title={rowData.state === "DO" ? "" : "当前状态无法撤销操作"}>
+            <Tooltip title={rowData.state === "DO" ? "" : "当前为撤销状态，无法操作"}>
               <Button
                 type={"link"}
                 disabled={rowData.state !== "DO"}
@@ -124,9 +127,10 @@ export const useColumns = () => {
                     closable: true,
                     icon: createVNode(ExclamationCircleOutlined),
                     onOk() {
-                      return operationLogStore.undo({
+                      return undo({
+                        operationID: rowData.operationID,
                         body: {
-                          operationID: [rowData.operationID],
+                          logIDs: [rowData.logID],
                         },
                       });
                     },

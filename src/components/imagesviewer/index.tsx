@@ -1,7 +1,13 @@
 import { computed, defineComponent, onMounted, ref, watch } from "vue";
 import { defineStore } from "pinia";
 import "./index.less";
-import { CloseOutlined, LoadingOutlined } from "@ant-design/icons-vue";
+import {
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
+  CloseOutlined,
+  CopyOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons-vue";
 import { useKeyMap } from "@src/utils/keymap";
 import { getObject, IObjectObjectInfo } from "@src/src-clients/storage";
 import { useZoomModal } from "@src/components/imagesviewer/useZoomImage";
@@ -11,6 +17,9 @@ import { useMoveModal } from "@src/components/imagesviewer/useMoveModal";
 import { CircularArray } from "@src/components/imagesviewer/CircularArray";
 import { useDiskStore } from "@src/pages/disk/store";
 import { isImage } from "@src/pages/disk/Icon";
+import { writeText } from "@tauri-apps/api/clipboard";
+import { message, Tooltip } from "ant-design-vue";
+import { toFullTime } from "@src/utils/date";
 
 export const useImagesViewerStore = defineStore("imagesViewer", () => {
   const store = useDiskStore();
@@ -147,13 +156,65 @@ export const ImagesViewer = defineComponent({
           class={"left-0 top-0 images-viewer w-full h-full fixed flex items-center justify-center"}>
           <div class={"animation-fade-in z-1 images-viewer fixed inset-0 opacity-50 bg-black"}></div>
           <div
-            class={"close z-30 p-2 fixed right-8 top-8 text-gray-100 cursor-pointer"}
+            class={"close z-30 p-2 text-xl fixed right-8 top-8 text-gray-100 cursor-pointer"}
             onClick={() => {
               imagesViewerStore.setCurrentPath("");
             }}>
             <CloseOutlined />
           </div>
 
+          <Tooltip title={"上一张"}>
+            <div
+              class={"z-30 text-xl p-2 fixed left-8 top-center text-gray-100 cursor-pointer prev text-white"}
+              onClick={() => {
+                if (!imagesViewerStore.currentImage?.path) return;
+                imagesViewerStore.prev();
+              }}>
+              <ArrowLeftOutlined />
+            </div>
+          </Tooltip>
+          <Tooltip title={"下一张"}>
+            <div
+              class={"z-30 p-2 text-xl fixed right-8 top-center text-gray-100 cursor-pointer next text-white"}
+              onClick={() => {
+                if (!imagesViewerStore.currentImage?.path) return;
+                imagesViewerStore.next();
+              }}>
+              <ArrowRightOutlined />
+            </div>
+          </Tooltip>
+          {!!imagesViewerStore.currentImage && (
+            <>
+              <div class={"z-30 p-2 text-xl fixed left-8 top-8 text-gray-100 cursor-pointer next text-white"}>
+                图片名称：{imagesViewerStore.currentImage?.name}
+                <Tooltip title={"复制名称"}>
+                  <CopyOutlined
+                    class={"ml-2"}
+                    onClick={() => {
+                      if (imagesViewerStore.currentImage?.name) {
+                        writeText(imagesViewerStore.currentImage?.name);
+                        message.success("复制成功");
+                      }
+                    }}
+                  />
+                </Tooltip>
+              </div>
+              <div class={"z-30 p-2 text-sm fixed left-8 top-16 text-gray-200 cursor-pointer next"}>
+                创建时间：{toFullTime(imagesViewerStore.currentImage?.updatedAt)}
+                <Tooltip title={"复制名称"}>
+                  <CopyOutlined
+                    class={"ml-2"}
+                    onClick={() => {
+                      if (imagesViewerStore.currentImage?.name) {
+                        writeText(imagesViewerStore.currentImage?.name);
+                        message.success("复制成功");
+                      }
+                    }}
+                  />
+                </Tooltip>
+              </div>
+            </>
+          )}
           <div ref={imageContainerRef} class={"relative z-40"}>
             <div>
               {imagesViewerStore.currentImage ? (

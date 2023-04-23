@@ -24,47 +24,57 @@ export const bindDirGroupRole = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     groupID: IGroupGroupID;
     body: IObjectBindDirGroupRoleBody;
   },
   null
->("storage.BindDirGroupRole", ({ authorization: pAuthorization, path: pPath, groupID: pGroupID, body: pBody }) => {
-  return {
-    method: "PUT",
-    url: `/api/storage/v0/dirs/groups/${pGroupID}/roles`,
-    data: pBody,
-    query: {
-      authorization: pAuthorization,
-      path: pPath,
-    },
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
-});
+>(
+  "storage.BindDirGroupRole",
+  ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, groupID: pGroupID, body: pBody }) => {
+    return {
+      method: "PUT",
+      url: `/api/storage/v0/dirs/groups/${pGroupID}/roles`,
+      data: pBody,
+      query: {
+        authorization: pAuthorization,
+        path: pPath,
+        taskCode: pTaskCode,
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+  },
+);
 
 export const bindDirUserRole = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     accountID: IAccountAccountID;
     body: IObjectBindDirUserRoleBody;
   },
   null
->("storage.BindDirUserRole", ({ authorization: pAuthorization, path: pPath, accountID: pAccountID, body: pBody }) => {
-  return {
-    method: "PUT",
-    url: `/api/storage/v0/dirs/users/${pAccountID}/roles`,
-    data: pBody,
-    query: {
-      authorization: pAuthorization,
-      path: pPath,
-    },
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
-});
+>(
+  "storage.BindDirUserRole",
+  ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, accountID: pAccountID, body: pBody }) => {
+    return {
+      method: "PUT",
+      url: `/api/storage/v0/dirs/users/${pAccountID}/roles`,
+      data: pBody,
+      query: {
+        authorization: pAuthorization,
+        path: pPath,
+        taskCode: pTaskCode,
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+  },
+);
 
 export const bindGroupAccount = createApiInstance<
   {
@@ -95,16 +105,18 @@ export const checkObject = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     SHA256: string;
   },
   null
->("storage.CheckObject", ({ authorization: pAuthorization, path: pPath, SHA256: pSha256 }) => {
+>("storage.CheckObject", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, SHA256: pSha256 }) => {
   return {
     method: "GET",
     url: `/api/storage/v0/objects/check`,
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
       SHA256: pSha256,
     },
   };
@@ -135,15 +147,17 @@ export const createDir = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
   },
   null
->("storage.CreateDir", ({ authorization: pAuthorization, path: pPath }) => {
+>("storage.CreateDir", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode }) => {
   return {
     method: "POST",
     url: `/api/storage/v0/dirs/create`,
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
     },
   };
 });
@@ -158,6 +172,26 @@ export const createGroup = createApiInstance<
   return {
     method: "POST",
     url: `/api/storage/v0`,
+    data: pBody,
+    query: {
+      authorization: pAuthorization,
+    },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+});
+
+export const createOperationTask = createApiInstance<
+  {
+    authorization?: string;
+    body: IOperationLogCreateOperationTaskBody;
+  },
+  IOperationLogCreateOperationTaskRep
+>("storage.CreateOperationTask", ({ authorization: pAuthorization, body: pBody }) => {
+  return {
+    method: "POST",
+    url: `/api/storage/v0/operations`,
     data: pBody,
     query: {
       authorization: pAuthorization,
@@ -260,15 +294,17 @@ export const deleteDir = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
   },
   null
->("storage.DeleteDir", ({ authorization: pAuthorization, path: pPath }) => {
+>("storage.DeleteDir", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode }) => {
   return {
     method: "DELETE",
     url: `/api/storage/v0/dirs/delete`,
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
     },
   };
 });
@@ -293,16 +329,18 @@ export const deleteObject = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     file: string | string[];
   },
   null
->("storage.DeleteObject", ({ authorization: pAuthorization, path: pPath, file: pFile }) => {
+>("storage.DeleteObject", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, file: pFile }) => {
   return {
     method: "DELETE",
     url: `/api/storage/v0/objects/delete`,
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
       file: pFile,
     },
   };
@@ -312,10 +350,11 @@ export const dirCopy = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     body: IObjectDirCopyBody;
   },
   null
->("storage.DirCopy", ({ authorization: pAuthorization, path: pPath, body: pBody }) => {
+>("storage.DirCopy", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
   return {
     method: "PUT",
     url: `/api/storage/v0/dirs/copy`,
@@ -323,6 +362,7 @@ export const dirCopy = createApiInstance<
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
     },
     headers: {
       "Content-Type": "application/json",
@@ -334,10 +374,11 @@ export const dirMove = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     body: IObjectDirMoveBody;
   },
   null
->("storage.DirMove", ({ authorization: pAuthorization, path: pPath, body: pBody }) => {
+>("storage.DirMove", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
   return {
     method: "PUT",
     url: `/api/storage/v0/dirs/move`,
@@ -345,6 +386,7 @@ export const dirMove = createApiInstance<
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
     },
     headers: {
       "Content-Type": "application/json",
@@ -356,10 +398,11 @@ export const dirRename = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     body: IObjectDirRenameBody;
   },
   null
->("storage.DirRename", ({ authorization: pAuthorization, path: pPath, body: pBody }) => {
+>("storage.DirRename", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
   return {
     method: "PUT",
     url: `/api/storage/v0/dirs/rename`,
@@ -367,6 +410,7 @@ export const dirRename = createApiInstance<
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
     },
     headers: {
       "Content-Type": "application/json",
@@ -383,6 +427,7 @@ export const displayAccount = (field: keyof IAccount) => {
         accountID: "",
         name: "",
         state: "",
+        uniqueCode: "账户唯一标识",
       } as { [key: string]: string }
     )[field]
   );
@@ -739,10 +784,52 @@ export const displayOpenapiObjectDataList = (field: keyof IOpenapiObjectDataList
   )[field];
 };
 
+export const displayOperation = (field: keyof IOperation) => {
+  return (
+    displayUtilsDatatypesPrimaryID(field as any) ||
+    displayUtilsDatatypesCreationTime(field as any) ||
+    (
+      {
+        desc: "描述",
+        operationID: "操作ID",
+        operator: "操作者",
+        operatorType: "操作者类型",
+        taskCode: "任务码",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayOperationLogCreateOperationTaskBody = (field: keyof IOperationLogCreateOperationTaskBody) => {
+  return (
+    {
+      desc: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayOperationLogCreateOperationTaskRep = (field: keyof IOperationLogCreateOperationTaskRep) => {
+  return (
+    {
+      taskCode: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
 export const displayOperationLogOperationUndoBody = (field: keyof IOperationLogOperationUndoBody) => {
   return (
     {
-      operationID: "",
+      isAll: "",
+      logIDs: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayOperationOperationDataList = (field: keyof IOperationOperationDataList) => {
+  return (
+    {
+      data: "",
+      total: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -753,8 +840,8 @@ export const displayOperationOperationLog = (field: keyof IOperationOperationLog
     displayUtilsDatatypesCreationUpdationTime(field as any) ||
     (
       {
-        accountID: "操作人",
         desc: "操作描述",
+        logID: "",
         operationID: "操作ID",
         state: "执行状态",
         type: "操作类型",
@@ -772,16 +859,11 @@ export const displayOperationOperationLogDataList = (field: keyof IOperationOper
   )[field];
 };
 
-export const displayOperationOperationLogWithUser = (field: keyof IOperationOperationLogWithUser) => {
-  return (
-    displayOperationOperationLog(field as any) ||
-    (
-      {
-        userName: "账户姓名",
-        userState: "账户状态",
-      } as { [key: string]: string }
-    )[field]
-  );
+export const displayOperationOperationState = (type: "DO" | "UNDO") => {
+  return {
+    DO: "执行",
+    UNDO: "撤销",
+  }[type];
 };
 
 export const displayOperationOperationType = (type: "OBJECT") => {
@@ -790,10 +872,21 @@ export const displayOperationOperationType = (type: "OBJECT") => {
   }[type];
 };
 
-export const displayOperationState = (type: "DO" | "UNDO") => {
+export const displayOperationOperationWithOperatorName = (field: keyof IOperationOperationWithOperatorName) => {
+  return (
+    displayOperation(field as any) ||
+    (
+      {
+        operatorName: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayOperationOperatorType = (type: "ACCOUNT" | "CLIENT") => {
   return {
-    DO: "执行",
-    UNDO: "撤销",
+    ACCOUNT: "用户",
+    CLIENT: "客户端",
   }[type];
 };
 
@@ -970,20 +1063,25 @@ export const getObject = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     "image-process"?: IImageProcessProcessCondition;
   },
   null
->("storage.GetObject", ({ authorization: pAuthorization, path: pPath, "image-process": pImageProcess }) => {
-  return {
-    method: "GET",
-    url: `/api/storage/v0/objects/get`,
-    query: {
-      authorization: pAuthorization,
-      path: pPath,
-      "image-process": pImageProcess,
-    },
-  };
-});
+>(
+  "storage.GetObject",
+  ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, "image-process": pImageProcess }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/objects/get`,
+      query: {
+        authorization: pAuthorization,
+        path: pPath,
+        taskCode: pTaskCode,
+        "image-process": pImageProcess,
+      },
+    };
+  },
+);
 
 export const listAccount = createApiInstance<
   {
@@ -1087,6 +1185,7 @@ export const listDirGroupRole = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     groupID?: IGroupGroupID | IGroupGroupID[];
     name?: string | string[];
     size?: number;
@@ -1095,13 +1194,22 @@ export const listDirGroupRole = createApiInstance<
   IRbacGroupDataList
 >(
   "storage.ListDirGroupRole",
-  ({ authorization: pAuthorization, path: pPath, groupID: pGroupID, name: pName, size: pSize, offset: pOffset }) => {
+  ({
+    authorization: pAuthorization,
+    path: pPath,
+    taskCode: pTaskCode,
+    groupID: pGroupID,
+    name: pName,
+    size: pSize,
+    offset: pOffset,
+  }) => {
     return {
       method: "GET",
       url: `/api/storage/v0/dirs/groups`,
       query: {
         authorization: pAuthorization,
         path: pPath,
+        taskCode: pTaskCode,
         groupID: pGroupID,
         name: pName,
         size: pSize,
@@ -1115,6 +1223,7 @@ export const listDirUserRole = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     accountID?: IAccountAccountID | IAccountAccountID[];
     identity?: string | string[];
     name?: string | string[];
@@ -1127,6 +1236,7 @@ export const listDirUserRole = createApiInstance<
   ({
     authorization: pAuthorization,
     path: pPath,
+    taskCode: pTaskCode,
     accountID: pAccountID,
     identity: pIdentity,
     name: pName,
@@ -1139,6 +1249,7 @@ export const listDirUserRole = createApiInstance<
       query: {
         authorization: pAuthorization,
         path: pPath,
+        taskCode: pTaskCode,
         accountID: pAccountID,
         identity: pIdentity,
         name: pName,
@@ -1219,25 +1330,63 @@ export const listObjects = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
   },
   IObjectObjectDataList
->("storage.ListObjects", ({ authorization: pAuthorization, path: pPath }) => {
+>("storage.ListObjects", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode }) => {
   return {
     method: "GET",
     url: `/api/storage/v0/objects/list`,
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
     },
   };
 });
 
-export const listOperationLog = createApiInstance<
+export const listOperation = createApiInstance<
   {
     authorization?: string;
     operationID?: IOperationOperationID | IOperationOperationID[];
-    accountID?: IAccountAccountID | IAccountAccountID[];
+    operator?: string | string[];
+    operatorType?: IOperationOperatorType | IOperationOperatorType[];
+    size?: number;
+    offset?: number;
+  },
+  IOperationOperationDataList
+>(
+  "storage.ListOperation",
+  ({
+    authorization: pAuthorization,
+    operationID: pOperationID,
+    operator: pOperator,
+    operatorType: pOperatorType,
+    size: pSize,
+    offset: pOffset,
+  }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/operations`,
+      query: {
+        authorization: pAuthorization,
+        operationID: pOperationID,
+        operator: pOperator,
+        operatorType: pOperatorType,
+        size: pSize,
+        offset: pOffset,
+      },
+    };
+  },
+);
+
+export const listOperationLog = createApiInstance<
+  {
+    authorization?: string;
+    operationID: IOperationOperationID;
+    logID?: IOperationOperationLogID | IOperationOperationLogID[];
     type?: IOperationOperationType | IOperationOperationType[];
+    state?: IOperationOperationState | IOperationOperationState[];
     size?: number;
     offset?: number;
   },
@@ -1247,19 +1396,20 @@ export const listOperationLog = createApiInstance<
   ({
     authorization: pAuthorization,
     operationID: pOperationID,
-    accountID: pAccountID,
+    logID: pLogID,
     type: pType,
+    state: pState,
     size: pSize,
     offset: pOffset,
   }) => {
     return {
       method: "GET",
-      url: `/api/storage/v0/operation-logs`,
+      url: `/api/storage/v0/operations/${pOperationID}/logs`,
       query: {
         authorization: pAuthorization,
-        operationID: pOperationID,
-        accountID: pAccountID,
+        logID: pLogID,
         type: pType,
+        state: pState,
         size: pSize,
         offset: pOffset,
       },
@@ -1271,16 +1421,18 @@ export const objectRename = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     newpath: string;
   },
   null
->("storage.ObjectRename", ({ authorization: pAuthorization, path: pPath, newpath: pNewpath }) => {
+>("storage.ObjectRename", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, newpath: pNewpath }) => {
   return {
     method: "PUT",
     url: `/api/storage/v0/objects/rename`,
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
       newpath: pNewpath,
     },
   };
@@ -1290,6 +1442,7 @@ export const objectUpload = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     "content-type": string;
     SHA256: string;
     body: any;
@@ -1297,7 +1450,14 @@ export const objectUpload = createApiInstance<
   null
 >(
   "storage.ObjectUpload",
-  ({ authorization: pAuthorization, path: pPath, "content-type": pContentType, SHA256: pSha256, body: pBody }) => {
+  ({
+    authorization: pAuthorization,
+    path: pPath,
+    taskCode: pTaskCode,
+    "content-type": pContentType,
+    SHA256: pSha256,
+    body: pBody,
+  }) => {
     return {
       method: "POST",
       url: `/api/storage/v0/objects/upload`,
@@ -1305,6 +1465,7 @@ export const objectUpload = createApiInstance<
       query: {
         authorization: pAuthorization,
         path: pPath,
+        taskCode: pTaskCode,
         "content-type": pContentType,
         SHA256: pSha256,
       },
@@ -1319,10 +1480,11 @@ export const objectsCopy = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     body: IObjectObjectsCopyParam;
   },
   null
->("storage.ObjectsCopy", ({ authorization: pAuthorization, path: pPath, body: pBody }) => {
+>("storage.ObjectsCopy", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
   return {
     method: "POST",
     url: `/api/storage/v0/objects/copy`,
@@ -1330,6 +1492,7 @@ export const objectsCopy = createApiInstance<
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
     },
     headers: {
       "Content-Type": "application/json",
@@ -1341,10 +1504,11 @@ export const objectsMove = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     body: IObjectObjectsCopyBody;
   },
   null
->("storage.ObjectsMove", ({ authorization: pAuthorization, path: pPath, body: pBody }) => {
+>("storage.ObjectsMove", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
   return {
     method: "POST",
     url: `/api/storage/v0/objects/move`,
@@ -1352,6 +1516,7 @@ export const objectsMove = createApiInstance<
     query: {
       authorization: pAuthorization,
       path: pPath,
+      taskCode: pTaskCode,
     },
     headers: {
       "Content-Type": "application/json",
@@ -1403,13 +1568,14 @@ export const openapiListObjects = createApiInstance<
 export const operationUndo = createApiInstance<
   {
     authorization?: string;
+    operationID: IOperationOperationID;
     body: IOperationLogOperationUndoBody;
   },
   null
->("storage.OperationUndo", ({ authorization: pAuthorization, body: pBody }) => {
+>("storage.OperationUndo", ({ authorization: pAuthorization, operationID: pOperationID, body: pBody }) => {
   return {
     method: "PUT",
-    url: `/api/storage/v0/operation-logs/undo`,
+    url: `/api/storage/v0/operations/${pOperationID}/undo`,
     data: pBody,
     query: {
       authorization: pAuthorization,
@@ -1514,37 +1680,47 @@ export const unBindDirGroupRole = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     groupID: IGroupGroupID;
   },
   null
->("storage.UnBindDirGroupRole", ({ authorization: pAuthorization, path: pPath, groupID: pGroupID }) => {
-  return {
-    method: "DELETE",
-    url: `/api/storage/v0/dirs/groups/${pGroupID}/roles`,
-    query: {
-      authorization: pAuthorization,
-      path: pPath,
-    },
-  };
-});
+>(
+  "storage.UnBindDirGroupRole",
+  ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, groupID: pGroupID }) => {
+    return {
+      method: "DELETE",
+      url: `/api/storage/v0/dirs/groups/${pGroupID}/roles`,
+      query: {
+        authorization: pAuthorization,
+        path: pPath,
+        taskCode: pTaskCode,
+      },
+    };
+  },
+);
 
 export const unBindDirUserRole = createApiInstance<
   {
     authorization?: string;
     path: string;
+    taskCode?: string;
     accountID: IAccountAccountID;
   },
   null
->("storage.UnBindDirUserRole", ({ authorization: pAuthorization, path: pPath, accountID: pAccountID }) => {
-  return {
-    method: "DELETE",
-    url: `/api/storage/v0/dirs/users/${pAccountID}/roles`,
-    query: {
-      authorization: pAuthorization,
-      path: pPath,
-    },
-  };
-});
+>(
+  "storage.UnBindDirUserRole",
+  ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, accountID: pAccountID }) => {
+    return {
+      method: "DELETE",
+      url: `/api/storage/v0/dirs/users/${pAccountID}/roles`,
+      query: {
+        authorization: pAuthorization,
+        path: pPath,
+        taskCode: pTaskCode,
+      },
+    };
+  },
+);
 
 export const unBindGroupAccount = createApiInstance<
   {
@@ -1595,13 +1771,18 @@ export enum GroupRoleType {
   MEMBER = "MEMBER",
 }
 
+export enum OperationOperationState {
+  DO = "DO",
+  UNDO = "UNDO",
+}
+
 export enum OperationOperationType {
   OBJECT = "OBJECT",
 }
 
-export enum OperationState {
-  DO = "DO",
-  UNDO = "UNDO",
+export enum OperationOperatorType {
+  ACCOUNT = "ACCOUNT",
+  CLIENT = "CLIENT",
 }
 
 export enum RbacRoleType {
@@ -1615,6 +1796,7 @@ export interface IAccount extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreat
   accountID: IAccountAccountID;
   name: string;
   state: IAccountState;
+  uniqueCode: string;
 }
 
 export interface IAccountPutAccountStateBody {
@@ -1789,26 +1971,47 @@ export interface IOpenapiObjectDataList {
   data: IObjectObjectInfo[];
 }
 
+export interface IOperation extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationTime {
+  desc: string;
+  operationID: IOperationOperationID;
+  operator: string;
+  operatorType: IOperationOperatorType;
+  taskCode: string;
+}
+
+export interface IOperationLogCreateOperationTaskBody {
+  desc: string;
+}
+
+export interface IOperationLogCreateOperationTaskRep {
+  taskCode: string;
+}
+
 export interface IOperationLogOperationUndoBody {
-  operationID: IOperationOperationID[];
+  isAll?: IDatatypesBool;
+  logIDs?: IOperationOperationLogID[];
+}
+
+export interface IOperationOperationDataList {
+  data: IOperationOperationWithOperatorName[];
+  total: number;
 }
 
 export interface IOperationOperationLog extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationUpdationTime {
-  accountID: IAccountAccountID;
   desc: IOperationText;
+  logID: IOperationOperationLogID;
   operationID: IOperationOperationID;
-  state: IOperationState;
+  state: IOperationOperationState;
   type: IOperationOperationType;
 }
 
 export interface IOperationOperationLogDataList {
-  data: IOperationOperationLogWithUser[];
+  data: IOperationOperationLog[];
   total: number;
 }
 
-export interface IOperationOperationLogWithUser extends IOperationOperationLog {
-  userName: string;
-  userState: IAccountState;
+export interface IOperationOperationWithOperatorName extends IOperation {
+  operatorName: string;
 }
 
 export interface IRbacAccount extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationUpdationDeletionTime {
@@ -1892,9 +2095,13 @@ export type IObjectDirID = string;
 
 export type IOperationOperationID = string;
 
+export type IOperationOperationLogID = string;
+
+export type IOperationOperationState = keyof typeof OperationOperationState;
+
 export type IOperationOperationType = keyof typeof OperationOperationType;
 
-export type IOperationState = keyof typeof OperationState;
+export type IOperationOperatorType = keyof typeof OperationOperatorType;
 
 export type IOperationText = string;
 

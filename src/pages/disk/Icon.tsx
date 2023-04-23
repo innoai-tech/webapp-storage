@@ -217,7 +217,7 @@ export const IconDir = defineComponent({
   },
 });
 export const isImage = (type: string) => {
-  return type?.includes("png") || type?.includes("jpg") || type?.includes("jpeg") || type?.includes("gif");
+  return type?.includes("image");
 };
 export const isVideo = (type: string) => {
   return type?.includes("video");
@@ -240,7 +240,12 @@ export const IconImage = defineComponent({
         src.value = getObject.getConfig({
           path: props.imageData.path,
           // 指定了显示所类图就设置一下缩略图，方便快速加载
-          "image-process": `resize(w:${64 * 3},m=fit,p=center)`,
+          "image-process":
+            props.imageData?.["content-type"]?.includes("jpeg") ||
+            props.imageData?.["content-type"]?.includes("png") ||
+            props.imageData?.["content-type"]?.includes("jpg")
+              ? `resize(w:${64 * 3},m=fit,p=center)`
+              : undefined,
         }).url;
       }
     });

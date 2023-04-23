@@ -6,7 +6,7 @@ import { Org } from "@src/pages/org";
 import { Member } from "@src/pages/member";
 import { Transmission } from "@src/pages/transmission";
 import { Admin } from "@src/pages/admin";
-import { Log } from "@src/pages/log";
+import { TaskLog } from "@src/pages/taskLog";
 import { Setting } from "@src/pages/setting";
 import { ClientManage } from "@src/pages/clientManage";
 
@@ -59,9 +59,9 @@ export const routes = [
             meta: { title: "传输管理" },
           },
           {
-            path: "log",
-            component: Log,
-            name: "log",
+            path: "task-log",
+            component: TaskLog,
+            name: "taskLog",
             children: [],
             meta: { title: "操作记录" },
           },

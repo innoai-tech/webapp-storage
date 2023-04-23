@@ -1,8 +1,8 @@
-import { computed, createVNode, defineComponent, ref } from "vue";
+import { computed, createVNode, defineComponent } from "vue";
 import { useTransmissionStore } from "@src/pages/transmission";
 import { Table } from "@src/components/table";
 import { useColumns, useDownloadedPanelCheckedStore } from "@src/pages/transmission/downloadPanel/useColumns";
-import { Button, Modal, Pagination } from "ant-design-vue";
+import { Button, Modal } from "ant-design-vue";
 import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
 import { invoke } from "@tauri-apps/api/tauri";
 

@@ -118,7 +118,7 @@ export const useTransmissionStore = defineStore(storeKey, () => {
               if (uploadedPanelStore.checkedMap[item.id]) {
                 const newMap = unref(uploadedPanelStore.checkedMap);
                 delete newMap[item.id];
-                uploadedPanelStore.checkedMap = newMap;
+                uploadedPanelStore.checkedMap = { ...newMap };
               }
             }
 
@@ -208,7 +208,7 @@ export const useTransmissionStore = defineStore(storeKey, () => {
               if (downloadedPanelStore.checkedMap[item.id]) {
                 const newMap = unref(uploadedPanelStore.checkedMap);
                 delete newMap[item.id];
-                downloadedPanelStore.checkedMap = newMap;
+                downloadedPanelStore.checkedMap = { ...newMap };
               }
             }
 

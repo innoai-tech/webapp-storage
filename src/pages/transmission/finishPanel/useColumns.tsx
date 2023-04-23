@@ -39,7 +39,7 @@ export const useColumns = () => {
           const newMap = unref(checkedMap.value);
           const value = e.target.checked;
           newMap[rowData.id] = value as boolean;
-          checkedMap.value = newMap;
+          checkedMap.value = { ...newMap };
         };
         return <Checkbox onChange={onChange} checked={checkedMap.value[rowData.id]} />;
       },
