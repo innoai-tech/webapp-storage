@@ -2,7 +2,7 @@ import { computed, createVNode, defineComponent, onMounted, ref, watch } from "v
 import { useTransmissionStore } from "@src/pages/transmission";
 import { Table } from "@src/components/table";
 import { useColumns, useFinishedPanelCheckedStore } from "@src/pages/transmission/finishPanel/useColumns";
-import { Button, Modal, Pagination } from "ant-design-vue";
+import { Button, Modal, Pagination, Tooltip } from "ant-design-vue";
 import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
 
 export const FinishedPanel = defineComponent({
@@ -20,25 +20,27 @@ export const FinishedPanel = defineComponent({
     return () => (
       <div class={"h-full flex flex-col"}>
         <div class={"flex justify-between items-end"}>
-          <Button
-            type={"primary"}
-            danger
-            disabled={!hasChecked.value}
-            onClick={() => {
-              Modal.confirm({
-                title: "是否确定删除这些传输记录?",
-                closable: true,
-                icon: createVNode(ExclamationCircleOutlined),
-                onOk() {
-                  transmissionStore.finishedList = transmissionStore.finishedList.filter(
-                    (item) => !store.checkedMap[item.id],
-                  );
-                  store.checkedMap = {};
-                },
-              });
-            }}>
-            删除
-          </Button>
+          <Tooltip title={hasChecked.value ? "仅删除记录，不会删除文件" : ""}>
+            <Button
+              type={"primary"}
+              danger
+              disabled={!hasChecked.value}
+              onClick={() => {
+                Modal.confirm({
+                  title: "是否确定删除这些传输记录?",
+                  closable: true,
+                  icon: createVNode(ExclamationCircleOutlined),
+                  onOk() {
+                    transmissionStore.finishedList = transmissionStore.finishedList.filter(
+                      (item) => !store.checkedMap[item.id],
+                    );
+                    store.checkedMap = {};
+                  },
+                });
+              }}>
+              删除
+            </Button>
+          </Tooltip>
           <span>
             {checkLength.value}/{maxLength.value}
             <span class={"text-sm text-gray-400"} v-show={maxLength.value >= 5000}>

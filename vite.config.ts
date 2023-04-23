@@ -2,28 +2,17 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import vueJSX from "@vitejs/plugin-vue-jsx";
 import { resolve } from "path";
-import AutoImport from "unplugin-auto-import/vite";
-import Components from "unplugin-vue-components/vite";
-import ElementPlus from "unplugin-element-plus/vite";
-import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
-
-import { AntDesignVueResolver } from "unplugin-vue-components/resolvers";
-
+import { createStyleImportPlugin, ElementPlusResolve, AndDesignVueResolve } from "vite-plugin-style-import";
+import { visualizer } from "rollup-plugin-visualizer";
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [
     vue(),
     vueJSX(),
-    AutoImport({
-      resolvers: [ElementPlusResolver()],
+    createStyleImportPlugin({
+      resolves: [AndDesignVueResolve(), ElementPlusResolve()],
     }),
-    Components({
-      resolvers: [ElementPlusResolver()],
-    }),
-    ElementPlus({}),
-    Components({
-      resolvers: [AntDesignVueResolver()],
-    }),
+    visualizer(),
   ],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
@@ -34,6 +23,7 @@ export default defineConfig(async () => ({
     port: 1420,
     strictPort: true,
   },
+
   resolve: {
     alias: [{ find: /@src/, replacement: resolve(__dirname, "src") }],
   },
@@ -54,5 +44,31 @@ export default defineConfig(async () => ({
     minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
+    rollupOptions: {
+      manualChunks: (id) => {
+        if (id.includes("pinia")) {
+          return "vendor_pinia";
+        }
+        if (id.includes("vue-router")) {
+          return "vendor_vue-router";
+        }
+        if (id.includes("vue-runtime-core")) {
+          return "vendor_vue-runtime-core";
+        }
+        if (id.includes("ant-design-vue")) {
+          return "vendor_ant-design-vue";
+        }
+        if (id.includes("lodash")) {
+          return "vendor_lodash";
+        }
+        if (id.includes("element-plus")) {
+          return "vendor_element-plus";
+        }
+        if (id.includes("node_modules")) {
+          return "vendor";
+        }
+      },
+    },
+    chunkSizeWarningLimit: 2000,
   },
 }));

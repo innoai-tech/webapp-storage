@@ -11,8 +11,7 @@ import { parseSearchString } from "@src/plugins/router/helpers";
 import { useAuth } from "@src/plugins/auth";
 import { v4 as uuid } from "uuid";
 import "./index.less";
-import { ElButton, ElCard } from "element-plus";
-import { Button, Modal } from "ant-design-vue";
+import { Button, Modal, Card } from "ant-design-vue";
 import { Setting } from "@src/pages/setting";
 
 export const Index = defineComponent({
@@ -72,10 +71,11 @@ export const Index = defineComponent({
             域名配置
           </Button>
         </div>
-        <ElCard header={"AI 数据管理工具"} class={"login-card fixed"}>
+        <Card title={"AI 数据管理工具"} class={"login-card fixed"}>
           {providers.value.map((item) => {
             return (
               <Button
+                class={"flex items-center"}
                 type={"link"}
                 loading={loading.value}
                 disabled={loading.value}
@@ -125,7 +125,7 @@ export const Index = defineComponent({
               </Button>
             );
           })}
-        </ElCard>
+        </Card>
       </div>
     );
   },

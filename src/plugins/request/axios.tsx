@@ -4,7 +4,7 @@ import { defineStore } from "pinia";
 import { APP_CONFIG } from "@src/config";
 import { useAuth } from "@src/plugins/auth";
 import { StatusUnauthorized } from "@src/plugins/request/status";
-import { ElMessage } from "element-plus";
+import { message } from "ant-design-vue";
 
 export const axiosRequester = axios.create();
 
@@ -19,7 +19,7 @@ const useTalkErrorMsgStore = defineStore("calkErrorMsg", () => {
       messages.value.push(msg);
 
       // 弹窗关闭的时候删除提示
-      ElMessage.error(msg);
+      message.error(msg);
     },
   };
 });

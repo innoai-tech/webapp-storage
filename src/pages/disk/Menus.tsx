@@ -8,6 +8,7 @@ import {
   FolderAddOutlined,
   KeyOutlined,
   MoreOutlined,
+  RedoOutlined,
   UploadOutlined,
 } from "@ant-design/icons-vue";
 import { TooltipButton } from "@src/components/tooltipsButton/index";
@@ -20,7 +21,7 @@ import { useCurrentPath, useDiskStore } from "@src/pages/disk/store";
 import { useRequest } from "vue-request";
 import { deleteDir, deleteObject } from "@src/src-clients/storage";
 import { AuthButton } from "@src/components/authButton";
-import { last } from "lodash";
+import { last } from "lodash-es";
 
 export const DiskMenus = defineComponent({
   setup() {
@@ -264,6 +265,20 @@ export const DiskMenus = defineComponent({
                 </Button>
               </Tooltip>
             </Dropdown>
+
+            <Tooltip title={store.loading ? "刷新中..." : "刷新"}>
+              <Button
+                class={"ml-2"}
+                loading={store.loading}
+                disabled={store.loading}
+                onClick={() => {
+                  store.refreshFiles().then(() => {
+                    message.success("已刷新");
+                  });
+                }}>
+                <RedoOutlined />
+              </Button>
+            </Tooltip>
           </div>
           <div class={"w-48"}>
             <InputSearch

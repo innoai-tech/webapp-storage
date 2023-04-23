@@ -1,4 +1,4 @@
-import { isInteger } from "lodash";
+import { isInteger } from "lodash-es";
 import { Matrix } from "./matrix";
 import { Ref, onUnmounted } from "vue";
 import { useOffsetStore, useZoomStore } from "./store";

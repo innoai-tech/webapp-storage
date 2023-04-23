@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, unref, watch } from "vue";
 import { IObjectObjectInfo, IRbacRoleType, listObjects } from "@src/src-clients/storage";
 import { useRequest } from "vue-request";
+import { isEqual } from "lodash-es";
 
 export const usePathsStore = defineStore(
   "paths",
@@ -53,12 +54,17 @@ export const useDiskStore = defineStore("disk", () => {
     renamedFile.value = "";
   });
 
-  const { runAsync: getObjects } = useRequest(listObjects, {
+  const { runAsync: getObjects, loading } = useRequest(listObjects, {
     manual: true,
     debounceInterval: 100,
+    pollingInterval: 5000,
     onSuccess(res) {
-      objects.value = res.data || [];
-      roleType.value = res.roleType;
+      if (!isEqual(objects.value, res.data)) {
+        objects.value = res.data || [];
+      }
+      if (roleType.value !== res.roleType) {
+        roleType.value = res.roleType;
+      }
     },
   });
 
@@ -107,6 +113,7 @@ export const useDiskStore = defineStore("disk", () => {
     searchName,
     setCheckedMap,
     goToPath,
+    loading,
     checkedMap,
     roleType,
     renamedFile,

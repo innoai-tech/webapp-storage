@@ -1,8 +1,9 @@
 import { DefineComponent, defineComponent, onMounted, onUnmounted, ref, VNode } from "vue";
 import { ElTableV2 } from "element-plus";
-import { debounce } from "lodash";
+import "element-plus/es/components/table-v2/style/index";
+import { debounce } from "lodash-es";
 import { CellRendererParams, Column } from "element-plus/es/components/table-v2/src/types";
-
+// import zhCN from "element-plus/es/locale/lang/zh-cn";
 /*
  * element plus 的部分定义有问题，修改一下
  * */

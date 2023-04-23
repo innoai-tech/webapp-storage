@@ -7,7 +7,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { open } from "@tauri-apps/api/dialog";
 import { v4 as uuid } from "uuid";
 import { downloadDir } from "@tauri-apps/api/path";
-import { last } from "lodash";
+import { last } from "lodash-es";
 import { useTransmissionStore } from "@src/pages/transmission";
 import { ITransmission } from "@src/pages/transmission/interface";
 import dayjs from "dayjs";

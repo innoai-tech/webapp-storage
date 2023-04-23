@@ -4,7 +4,7 @@ import { dirCopy, dirMove, listObjects, objectsCopy, objectsMove } from "@src/sr
 import { Breadcrumb, BreadcrumbItem, Button, message, Modal, Tooltip } from "ant-design-vue";
 import { replacePathName } from "@src/pages/disk";
 import { joinPath, useCurrentPath, useDiskStore } from "@src/pages/disk/store";
-import { last } from "lodash";
+import { last } from "lodash-es";
 
 export const CopyAndMoveDirFilesModal = defineComponent({
   props: {
