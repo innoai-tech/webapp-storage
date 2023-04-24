@@ -155,21 +155,33 @@ pub async fn upload_core(
         }
     }
 
+    // 目前发现接口响应错误后，文件流依旧读取记录导致进度不正确，这里处理一下，有响应就关掉 state 停止读取
+    let read_file_state = Arc::new(AtomicU64::new(1));
     // 存储一下一共上传的进度，如果上传失败，就把总进度减去这部分进度
-    let before_upload_len = Arc::new(AtomicU64::new(0));
-    let _before_upload_len = before_upload_len.clone();
+    let record_upload_len = Arc::new(AtomicU64::new(0));
+    let _record_upload_len = record_upload_len.clone();
+    let _read_file_state = read_file_state.clone();
     let mut reader_stream = ReaderStream::new(file);
     // 将文件数据流包装为异步流
     let async_stream = async_stream::stream! {
         while let Some(chunk) = reader_stream.next().await {
+            //0停止 1 读取
+            if _read_file_state.load(Ordering::Relaxed) == 0 {
+                break;
+            }
+
             if let Ok(chunk) = &chunk {
             let len: u64 = chunk.len() as u64;
             // 保存当前上传进度
-            _before_upload_len.fetch_add(len, Ordering::Relaxed);
+            _record_upload_len.fetch_add(len, Ordering::Relaxed);
 
             let total = _total_len.load(Ordering::Relaxed);
             // 更新已上传长度
-            _uploaded_len.fetch_add(len,Ordering::Relaxed);
+            println!(
+                "更新进度{} ",
+                _uploaded_len.load(Ordering::Relaxed)
+            );
+            _uploaded_len.fetch_add(len, Ordering::Relaxed);
             let new_len = _uploaded_len.load(Ordering::Relaxed);
 
             UPLOAD_PROGRESS_STORE
@@ -186,9 +198,24 @@ pub async fn upload_core(
     };
 
     let reset_upload_len = move || {
-        //减去本次上传的进度(上传中添加的进度只是为了实时展示，试试上传完毕会重新添加整个文件的进去，就删除上传中的这部分避免重复添加)
-        let len = before_upload_len.load(Ordering::Relaxed);
-        uploaded_len.fetch_sub(len, Ordering::Relaxed);
+        // 通知文件流停止读取
+        read_file_state.store(0, Ordering::Relaxed);
+
+        //减去本次上传的进度(上传中添加的进度只是为了实时展示，上传完毕会重新添加整个文件的进去，就删除上传中的这部分避免重复添加)
+
+        uploaded_len.fetch_sub(record_upload_len.load(Ordering::Relaxed), Ordering::Relaxed);
+
+        // 清空记录的
+        record_upload_len.store(0, Ordering::Relaxed);
+
+        // 更新一下前端进度
+        let total = total_len.load(Ordering::Relaxed);
+        let new_len = uploaded_len.load(Ordering::Relaxed);
+        UPLOAD_PROGRESS_STORE.lock().unwrap().add(
+            id.clone(),
+            Some(new_len as f32 / total.clone() as f32),
+            None,
+        );
     };
 
     // 发送上传请求
@@ -221,7 +248,6 @@ pub async fn upload_core(
             }
         }
         Err(e) => {
-            //上传失败减去本次上传的进度
             reset_upload_len();
             return Err(Box::new(e));
         }
@@ -277,6 +303,7 @@ pub async fn upload(
         .await
         {
             Ok(res) => {
+                println!("1");
                 let total = total_len.load(Ordering::Relaxed);
                 uploaded_len.fetch_add(file_size, Ordering::Relaxed);
                 let new_len = uploaded_len.load(Ordering::Relaxed);
@@ -289,12 +316,14 @@ pub async fn upload(
             }
             Err(e) => {
                 if retry_count < 3 {
+                    println!("2");
                     retry_count += 1;
                     let timestamp = Local::now().to_rfc3339_opts(SecondsFormat::Secs, true);
                     let delay_ms: u64 = retry_count.pow(retry_count.try_into().unwrap()) * 1000;
                     tokio::time::sleep(Duration::from_millis(delay_ms)).await;
                     println!("上传失败重试中... ({}/3), {}", retry_count, timestamp);
                 } else {
+                    println!("3");
                     println!("彻底失败了");
                     let total = total_len.load(Ordering::Relaxed);
                     uploaded_len.fetch_add(file_size, Ordering::Relaxed);

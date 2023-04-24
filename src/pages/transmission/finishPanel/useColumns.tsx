@@ -161,7 +161,7 @@ export const useColumns = () => {
                 closable: true,
                 wrapClassName: "contentModal",
                 icon: createVNode(ExclamationCircleOutlined),
-                content: "删除仅仅会删除记录而不会删除文件，如有需要请下载完成后再删除对应文件",
+                content: "清除仅仅会清除记录而不会清除文件，如有需要请下载完成后再清除对应文件",
                 onOk() {
                   transmissionStore.setFinishedList(
                     transmissionStore.finishedList.filter((item) => item.id !== rowData.id),
@@ -169,7 +169,7 @@ export const useColumns = () => {
                 },
               });
             }}>
-            删除
+            清除
           </Button>
         );
       },

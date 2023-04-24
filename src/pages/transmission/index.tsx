@@ -105,7 +105,7 @@ export const useTransmissionStore = defineStore(storeKey, () => {
             };
           });
 
-          // uploadList 删除掉已完成的数据，同时把这些信息放入 map
+          // uploadList 清除掉已完成的数据，同时把这些信息放入 map
           uploadList.value = uploadList.value.filter((item) => {
             // 如果已经上传完毕就记录一下完整信息
             if (map[item.id]) {
@@ -166,7 +166,7 @@ export const useTransmissionStore = defineStore(storeKey, () => {
               return {
                 ...item,
                 errs: map[item.id].errors || item.errs,
-                progress: Number(`${(map[item.id].progress * 100).toFixed(2)}`.replaceAll(".00", "")),
+                progress: getProgress(map[item.id].progress),
               };
             }
             return item;
@@ -195,7 +195,7 @@ export const useTransmissionStore = defineStore(storeKey, () => {
             };
           });
 
-          // uploadList 删除掉已完成的数据，同时把这些信息放入 map
+          // uploadList 清除掉已完成的数据，同时把这些信息放入 map
           downloadList.value = downloadList.value.filter((item) => {
             // 如果已经上传完毕就记录一下完整信息
             if (map[item.id]) {
@@ -256,7 +256,7 @@ export const useTransmissionStore = defineStore(storeKey, () => {
               return {
                 ...item,
                 errs: map[item.id].errors || item.errs,
-                progress: Number(`${(map[item.id].progress * 100).toFixed(2)}`.replaceAll(".00", "")),
+                progress: getProgress(map[item.id].progress),
               };
             }
             return item;
@@ -333,3 +333,11 @@ export const Transmission = defineComponent({
     };
   },
 });
+
+/*上传如果出错，会导致进度可能超出 100%，虽然最后会修正，但是为了不出现明显错误，强制超过 100 的显示 99*/
+function getProgress(progress: number) {
+  // if (progress > 1) {
+  //   return 99;
+  // }
+  return Number(`${(progress * 100).toFixed(2)}`.replaceAll(".00", ""));
+}

@@ -20,7 +20,7 @@ export const FinishedPanel = defineComponent({
     return () => (
       <div class={"h-full flex flex-col"}>
         <div class={"flex justify-between items-end"}>
-          <Tooltip title={hasChecked.value ? "仅删除记录，不会删除文件" : ""}>
+          <Tooltip title={hasChecked.value ? "仅清除记录，不会清除文件" : ""}>
             <Button
               type={"primary"}
               danger
@@ -31,7 +31,7 @@ export const FinishedPanel = defineComponent({
                   closable: true,
                   wrapClassName: "contentModal",
                   icon: createVNode(ExclamationCircleOutlined),
-                  content: "删除仅仅会删除记录而不会删除文件，如有需要请下载完成后再删除对应文件",
+                  content: "清除仅仅会清除记录而不会清除文件，如有需要请下载完成后再清除对应文件",
                   onOk() {
                     transmissionStore.finishedList = transmissionStore.finishedList.filter(
                       (item) => !store.checkedMap[item.id],
@@ -40,7 +40,7 @@ export const FinishedPanel = defineComponent({
                   },
                 });
               }}>
-              删除
+              清除
             </Button>
           </Tooltip>
           <span>

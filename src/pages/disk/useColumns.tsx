@@ -1,7 +1,7 @@
 import { CellRendererParams } from "element-plus/es/components/table-v2/src/types";
 import { toFullTime } from "@src/utils/date";
-import { deleteDir, deleteObject, IObjectObjectInfo } from "@src/src-clients/storage";
-import { useCurrentPath, useDiskStore, usePathsStore } from "@src/pages/disk/store";
+import { deleteDir, deleteObject, IObject } from "@src/src-clients/storage";
+import { useBreadCrumbPathsStore, useCurrentPath, useDiskStore, usePathsStore } from "@src/pages/disk/store";
 import { computed, unref, createVNode, getCurrentInstance } from "vue";
 import { ExclamationCircleOutlined, MoreOutlined } from "@ant-design/icons-vue";
 import { Button, Checkbox, Dropdown, Menu, MenuItem, message, Modal, Tooltip } from "ant-design-vue";
@@ -10,7 +10,7 @@ import { CopyAndMoveDirFilesModal } from "@src/components/selectDirModal";
 import { useRequest } from "vue-request";
 import { RenameFileModal } from "@src/pages/disk/component/RenameFileModal";
 import { getFileSize } from "@src/utils/getFileSize";
-import { DirAuthModal, useDirAuthStore } from "@src/components/dirAuth";
+import { DirAuthModal } from "@src/components/dirAuth";
 import { useImagesViewerStore } from "@src/components/imagesviewer";
 import {
   IconCode,
@@ -20,6 +20,7 @@ import {
   IconMusic,
   IconPDF,
   IconPPT,
+  IconSharedDir,
   IconTxt,
   IconUnknown,
   IconVideo,
@@ -29,6 +30,7 @@ import {
 } from "@src/pages/disk/Icon";
 import { useVideosViewerStore } from "@src/components/videosviewer";
 import { AuthButton } from "@src/components/authButton";
+import { useCurrentAccountStore } from "@src/pages/account";
 
 export const useColumns = () => {
   const pathsStore = usePathsStore();
@@ -38,12 +40,12 @@ export const useColumns = () => {
     const values = Object.values(checkedMap.value);
     return !!values.length && !values.includes(false);
   });
-
+  const users = useCurrentAccountStore();
   const containsChecked = computed(() => Object.values(checkedMap.value).includes(true));
   const currentPath = useCurrentPath();
-  const dirAuthStore = useDirAuthStore();
   const videosViewerStore = useVideosViewerStore();
   const imagesViewerStore = useImagesViewerStore();
+  const breadCrumbPathsStore = useBreadCrumbPathsStore();
   const { runAsync: dirDelete } = useRequest(deleteDir, {
     manual: true,
     onSuccess() {
@@ -63,7 +65,7 @@ export const useColumns = () => {
     {
       key: "selection",
       width: 50,
-      cellRenderer: ({ rowData }: { rowData: IObjectObjectInfo }) => {
+      cellRenderer: ({ rowData }: { rowData: IObject }) => {
         const onChange = (e) => {
           const newMap = unref(checkedMap.value);
           const value = e.target.checked;
@@ -100,33 +102,50 @@ export const useColumns = () => {
       key: "name",
       dataKey: "name",
       width: 400,
-      cellRenderer({ rowData }: { rowData: IObjectObjectInfo }) {
+      cellRenderer({ rowData }: { rowData: IObject }) {
         const isImg = isImage(rowData["content-type"]);
         return (
-          <span
-            class={`flex items-center gap-2 w-full ${rowData.isDir || isImg ? "hover:underline cursor-pointer" : ""}`}
-            onClick={() => {
-              if (rowData.isDir) {
-                pathsStore.setPaths(store.goToPath(rowData.path));
-              } else if (isImg) {
-                imagesViewerStore.setCurrentPath(rowData.path);
-              }
-            }}>
-            {getFileType({ rowData: rowData })}
-            <span class={"flex-1 text-ellipsis whitespace-pre overflow-hidden"} title={rowData.name}>
-              <span>{rowData.name}</span>
+          <Tooltip
+            title={
+              rowData.owner && rowData.owner?.accountID !== users.account?.accountID
+                ? `共享自${rowData.owner.name}`
+                : ""
+            }>
+            <span
+              class={`flex items-center gap-2 w-full ${rowData.isDir || isImg ? "hover:underline cursor-pointer" : ""}`}
+              onClick={() => {
+                if (rowData.isDir) {
+                  breadCrumbPathsStore.setPaths(
+                    breadCrumbPathsStore.paths.concat([
+                      {
+                        relativePath: rowData.name,
+                        path: rowData.path,
+                        owner: rowData.owner,
+                      },
+                    ]),
+                  );
+
+                  pathsStore.setPaths(store.goToPath(rowData.path));
+                } else if (isImg) {
+                  imagesViewerStore.setCurrentPath(rowData.path);
+                }
+              }}>
+              {getFileType({ rowData: rowData })}
+              <span class={"flex-1 text-ellipsis whitespace-pre overflow-hidden"} title={rowData.name}>
+                <span>{rowData.name}</span>
+              </span>
             </span>
-          </span>
+          </Tooltip>
         );
       },
     },
     {
       title: "创建时间",
-      key: "createAt",
-      dataKey: "createAt",
+      key: "updatedAt",
+      dataKey: "updatedAt",
       width: 200,
-      cellRenderer({ cellData }: CellRendererParams<any>) {
-        return <span>{toFullTime(cellData)}</span>;
+      cellRenderer({ rowData }: { rowData: IObject }) {
+        return <span>{toFullTime(rowData.updatedAt)}</span>;
       },
     },
     {
@@ -134,7 +153,7 @@ export const useColumns = () => {
       key: "content-type",
       dataKey: "content-type",
       width: 140,
-      cellRenderer({ cellData, rowData }: CellRendererParams<IObjectObjectInfo>) {
+      cellRenderer({ cellData, rowData }: CellRendererParams<IObject>) {
         if (rowData.isDir) {
           return <span>文件夹</span>;
         }
@@ -146,7 +165,7 @@ export const useColumns = () => {
       key: "size",
       dataKey: "size",
       width: 140,
-      cellRenderer({ rowData }: { rowData: IObjectObjectInfo }) {
+      cellRenderer({ rowData }: { rowData: IObject }) {
         return <span>{getFileSize(rowData.size) || "-"}</span>;
       },
     },
@@ -156,7 +175,7 @@ export const useColumns = () => {
       dataKey: "path",
       width: 140,
       align: "center" as const,
-      cellRenderer({ rowData }: { rowData: IObjectObjectInfo }) {
+      cellRenderer({ rowData }: { rowData: IObject }) {
         const disabled = !rowData.isDir && !isImage(rowData["content-type"]) && !isVideo(rowData["content-type"]);
         return (
           <div class={"flex"}>
@@ -166,6 +185,14 @@ export const useColumns = () => {
                 disabled={disabled}
                 onClick={() => {
                   if (rowData.isDir) {
+                    breadCrumbPathsStore.setPaths(
+                      breadCrumbPathsStore.paths.concat([
+                        {
+                          relativePath: rowData.name,
+                          path: rowData.path,
+                        },
+                      ]),
+                    );
                     pathsStore.setPaths(store.goToPath(rowData.path));
                   } else if (isImage(rowData["content-type"])) {
                     imagesViewerStore.setCurrentPath(rowData.path);
@@ -177,7 +204,8 @@ export const useColumns = () => {
               </Button>
             </Tooltip>
 
-            <Button
+            <AuthButton
+              hasPermission={store.roleType !== "GUEST"}
               class={"ml-2"}
               type={"link"}
               onClick={() => {
@@ -188,7 +216,7 @@ export const useColumns = () => {
                 }
               }}>
               下载
-            </Button>
+            </AuthButton>
 
             <Dropdown
               trigger={"click"}
@@ -198,8 +226,9 @@ export const useColumns = () => {
                   return (
                     <Menu>
                       <MenuItem>
-                        <Button
+                        <AuthButton
                           class={"m-0 p-0"}
+                          hasPermission={store.roleType !== "GUEST"}
                           type={"link"}
                           onClick={() => {
                             Modal.confirm({
@@ -220,11 +249,12 @@ export const useColumns = () => {
                             });
                           }}>
                           复制
-                        </Button>
+                        </AuthButton>
                       </MenuItem>
                       <MenuItem>
-                        <Button
+                        <AuthButton
                           type={"link"}
+                          hasPermission={store.roleType !== "GUEST"}
                           onClick={() => {
                             Modal.confirm({
                               title: "复制文件",
@@ -244,12 +274,12 @@ export const useColumns = () => {
                             });
                           }}>
                           移动
-                        </Button>
+                        </AuthButton>
                       </MenuItem>
                       <MenuItem>
                         <AuthButton
                           type={"link"}
-                          hasPermission={dirAuthStore.currentUserRole !== "MEMBER"}
+                          hasPermission={store.roleType !== "GUEST"}
                           onClick={() => {
                             Modal.confirm({
                               title: "重命名",
@@ -273,7 +303,7 @@ export const useColumns = () => {
                         <MenuItem>
                           <AuthButton
                             type={"link"}
-                            hasPermission={dirAuthStore.currentUserRole !== "MEMBER"}
+                            hasPermission={store.roleType !== "MEMBER" && store.roleType !== "GUEST"}
                             danger
                             onClick={() => {
                               Modal.confirm({
@@ -295,7 +325,7 @@ export const useColumns = () => {
                       <MenuItem>
                         <AuthButton
                           type={"link"}
-                          hasPermission={dirAuthStore.currentUserRole !== "MEMBER"}
+                          hasPermission={store.roleType !== "GUEST" && store.roleType !== "MEMBER"}
                           danger
                           onClick={() => {
                             Modal.confirm({
@@ -336,7 +366,8 @@ export const useColumns = () => {
   ];
 };
 
-function getFileType({ rowData }: { rowData: IObjectObjectInfo }) {
+function getFileType({ rowData }: { rowData: IObject }) {
+  const users = useCurrentAccountStore();
   let type = "";
 
   if (rowData.isDir) {
@@ -362,6 +393,9 @@ function getFileType({ rowData }: { rowData: IObjectObjectInfo }) {
   }
 
   if (type === "DIR") {
+    if (rowData.owner && rowData.owner?.accountID !== users.account?.accountID) {
+      return <IconSharedDir />;
+    }
     return <IconDir />;
   }
   if (type === "IMAGE" && isImage(rowData["content-type"])) {

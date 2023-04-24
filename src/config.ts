@@ -31,9 +31,9 @@ export const APP_CONFIG = {
   //后端请求地址
   SRV_STORAGE: () => {
     // @ts-ignore
-    // if ((import.meta as any).env.PROD) {
-    //   return "http://172.20.50.27:20080";
-    // }
+    if ((import.meta as any).env.PROD) {
+      return "http://172.20.50.27:20080";
+    }
     return "http://172.20.30.92:8090";
   },
 };

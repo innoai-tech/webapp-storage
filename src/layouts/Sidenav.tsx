@@ -65,7 +65,7 @@ export const Sidenav = defineComponent({
         },
         {
           icon: <ApartmentOutlined />,
-          label: "客户端管理",
+          label: "凭证管理",
           key: "clientManage",
           show: currentUserStore.account?.isAdmin,
         },

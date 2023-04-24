@@ -1,14 +1,14 @@
-import { createVNode, defineComponent, onMounted, PropType, ref } from "vue";
+import { defineComponent, onMounted, PropType, ref } from "vue";
 import { Button, Form, FormItem, Input, message, Modal, Space, Tooltip } from "ant-design-vue";
 import { useClientsStore } from "@src/pages/clientManage/index";
 import { v4 as uuid } from "uuid";
-import { ExclamationCircleOutlined, MinusCircleOutlined, PlusOutlined } from "@ant-design/icons-vue";
+import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons-vue";
 import { IClient } from "@src/src-clients/storage";
 import { SecretContent } from "@src/pages/clientManage/SecretContent";
 interface IFormState {
   clientID: string;
   desc: string;
-  permissions: { permission: string; id: string }[];
+  // permissions: { permission: string; id: string }[];
   whiteList: { ip: string; id: string }[];
 }
 
@@ -26,7 +26,7 @@ export const CreateClientModal = defineComponent({
     const formState = ref<IFormState>({
       clientID: "",
       desc: "",
-      permissions: [{ id: uuid(), permission: "" }],
+      // permissions: [{ id: uuid(), permission: "" }],
       whiteList: [{ id: uuid(), ip: "" }],
     });
     const loading = ref(false);
@@ -35,11 +35,11 @@ export const CreateClientModal = defineComponent({
     onMounted(() => {
       if (props.client) {
         formState.value.clientID = props.client.clientID;
-        formState.value.permissions =
-          props.client.permissions?.map((permission) => ({
-            permission,
-            id: uuid(),
-          })) || formState.value.permissions;
+        // formState.value.permissions =
+        //   props.client.permissions?.map((permission) => ({
+        //     permission,
+        //     id: uuid(),
+        //   })) || formState.value.permissions;
         formState.value.desc = props.client.desc;
         formState.value.whiteList =
           props.client.whiteList?.map((ip) => ({
@@ -67,7 +67,7 @@ export const CreateClientModal = defineComponent({
                       clientID: props.client.clientID,
                       body: {
                         desc: formState.value.desc,
-                        permissions: formState.value.permissions.map((item) => item.permission).filter((item) => item),
+                        // permissions: formState.value.permissions.map((item) => item.permission).filter((item) => item),
                         whiteList: formState.value.whiteList.map((item) => item.ip).filter((item) => item),
                       },
                     })
@@ -77,7 +77,8 @@ export const CreateClientModal = defineComponent({
                 : clientsStore
                     .createClientRequest(formState.value.clientID, {
                       desc: formState.value.desc,
-                      permissions: formState.value.permissions.map((item) => item.permission).filter((item) => item),
+                      permissions: [],
+                      // permissions: formState.value.permissions.map((item) => item.permission).filter((item) => item),
                       whiteList: formState.value.whiteList.map((item) => item.ip).filter((item) => item),
                     })
                     .then((res) => {
@@ -180,38 +181,38 @@ export const CreateClientModal = defineComponent({
               </Button>
             </FormItem>
 
-            {formState.value.permissions.map((item, index) => {
-              return (
-                <Space key={item.id} align="baseline" class={"flex w-full"}>
-                  <FormItem labelCol={{ span: 4 }} name={["permissions", index]}>
-                    <Input disabled={loading.value} placeholder={"请输入权限范围"} v-model:value={item.permission} />
-                  </FormItem>
-                  <Tooltip title={"删除此项"}>
-                    <MinusCircleOutlined
-                      onClick={() => {
-                        if (loading.value) return;
-                        formState.value.permissions = formState.value.permissions.filter(
-                          (whiteItem) => whiteItem.id !== item.id,
-                        );
-                      }}
-                    />
-                  </Tooltip>
-                </Space>
-              );
-            })}
+            {/*{formState.value.permissions.map((item, index) => {*/}
+            {/*  return (*/}
+            {/*    <Space key={item.id} align="baseline" class={"flex w-full"}>*/}
+            {/*      <FormItem labelCol={{ span: 4 }} name={["permissions", index]}>*/}
+            {/*        <Input disabled={loading.value} placeholder={"请输入权限范围"} v-model:value={item.permission} />*/}
+            {/*      </FormItem>*/}
+            {/*      <Tooltip title={"删除此项"}>*/}
+            {/*        <MinusCircleOutlined*/}
+            {/*          onClick={() => {*/}
+            {/*            if (loading.value) return;*/}
+            {/*            formState.value.permissions = formState.value.permissions.filter(*/}
+            {/*              (whiteItem) => whiteItem.id !== item.id,*/}
+            {/*            );*/}
+            {/*          }}*/}
+            {/*        />*/}
+            {/*      </Tooltip>*/}
+            {/*    </Space>*/}
+            {/*  );*/}
+            {/*})}*/}
 
-            <FormItem>
-              <Button
-                type="dashed"
-                block
-                disabled={loading.value}
-                onClick={() => {
-                  formState.value.permissions.push({ id: uuid(), permission: "" });
-                }}>
-                <PlusOutlined />
-                添加权限范围
-              </Button>
-            </FormItem>
+            {/*<FormItem>*/}
+            {/*  <Button*/}
+            {/*    type="dashed"*/}
+            {/*    block*/}
+            {/*    disabled={loading.value}*/}
+            {/*    onClick={() => {*/}
+            {/*      formState.value.permissions.push({ id: uuid(), permission: "" });*/}
+            {/*    }}>*/}
+            {/*    <PlusOutlined />*/}
+            {/*    添加权限范围*/}
+            {/*  </Button>*/}
+            {/*</FormItem>*/}
 
             <div class={"flex items-center justify-end"}>
               <Button

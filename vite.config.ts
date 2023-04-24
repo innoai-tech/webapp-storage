@@ -5,6 +5,7 @@ import { resolve } from "path";
 import { createStyleImportPlugin, ElementPlusResolve, AndDesignVueResolve } from "vite-plugin-style-import";
 import { visualizer } from "rollup-plugin-visualizer";
 // https://vitejs.dev/config/
+console.log(process.env.TAURI_PLATFORM, "process.env.TAURI_PLATFORM");
 export default defineConfig(async () => ({
   plugins: [
     vue(),
@@ -39,7 +40,7 @@ export default defineConfig(async () => ({
   envPrefix: ["VITE_", "TAURI_"],
   build: {
     // Tauri supports es2021
-    target: process.env.TAURI_PLATFORM == "windows" ? "chrome105" : "safari13",
+    target: "chrome63",
     // don't minify for debug builds
     minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
     // produce sourcemaps for debug builds
@@ -69,6 +70,5 @@ export default defineConfig(async () => ({
         }
       },
     },
-    chunkSizeWarningLimit: 2000,
   },
 }));

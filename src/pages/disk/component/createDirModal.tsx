@@ -1,7 +1,7 @@
 import { defineComponent, ref } from "vue";
 import { Button, Form, FormItem, Input, message, Modal } from "ant-design-vue";
 import { useRequest } from "vue-request";
-import { useCurrentPath, useDiskStore } from "../store";
+import { joinPath, useCurrentPath, useDiskStore } from "../store";
 import { createDir } from "@src/src-clients/storage";
 import { replaceFileName } from "@src/pages/disk/upload";
 
@@ -34,7 +34,7 @@ export const CreateDirModal = defineComponent({
               }
               loading.value = true;
               runAsync({
-                path: `${currentPath.value}/${formState.value.dirName}`,
+                path: joinPath(currentPath.value, formState.value.dirName),
               })
                 .then(() => {
                   diskStore.refreshFiles();

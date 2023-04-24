@@ -1,36 +1,74 @@
 import { defineStore } from "pinia";
-import { computed, onUnmounted, ref, unref, watch } from "vue";
-import { IObjectObjectInfo, IRbacRoleType, listObjects } from "@src/src-clients/storage";
+import { computed, onUnmounted, ref, watch } from "vue";
+import { IObject, IObjectDirOwner, IRbacRoleType, listObjects, RbacRoleType } from "@src/src-clients/storage";
 import { useRequest } from "vue-request";
 import { isEqual } from "lodash-es";
+import { useCurrentAccountStore } from "@src/pages/account";
 
-export const usePathsStore = defineStore(
-  "paths",
-  () => {
-    const paths = ref<string[]>([]);
+export const usePathsStore = defineStore("paths", () => {
+  const paths = ref<string[]>([]);
 
-    return {
-      paths: paths,
-      setPaths(newPath: string[]) {
-        paths.value = newPath;
-      },
-    };
-  },
-  { persist: { enabled: true } },
-);
+  return {
+    paths: paths,
+    setPaths(newPath: string[]) {
+      paths.value = newPath;
+    },
+  };
+});
 export const useCurrentPath = () => {
   const paths = usePathsStore();
   return computed(() => (paths.paths?.length ? `/${paths.paths.join("/")}` : "/"));
 };
 
+interface IBreadCrumbPath {
+  path: string;
+  relativePath: string;
+  owner?: IObjectDirOwner;
+}
+
+/*
+ * 因为权限设计原因，面包屑展示的 path 不一定是真实 path，relativePath是用来展示的，path是实际请求的，点击面包屑后同步到usePathsStore里
+ * */
+export const useBreadCrumbPathsStore = defineStore("BreadCrumbPaths", () => {
+  const paths = ref<IBreadCrumbPath[]>([{ path: "/", relativePath: "/" }]);
+
+  return {
+    paths,
+    setPaths(newPaths: IBreadCrumbPath[]) {
+      paths.value = newPaths;
+    },
+  };
+});
+
+// 如果传入两个 path，第一个是当前 path，第二个是新 path，如果传入一个 path，就是新 path，拼接一下当前 path
 export function joinPath(path: string): string;
 export function joinPath(path: string, subPath: string): string;
+// 处理 path 拼接容易重复//的问题，路径的拼接最好用这个函数
 export function joinPath(path: string, subPath?: string) {
+  const user = useCurrentAccountStore();
+
   if (subPath) {
-    return `${path === "/" ? "" : path}${subPath?.startsWith("/") ? subPath : `/${subPath}`}`;
+    let _path = path;
+    if (user.account?.isAdmin) {
+      _path = path;
+    } else if (path === "/" || path === "") {
+      // 根目录拼接为当前用户uniqueCode
+      _path = `/users/${user.account?.uniqueCode}`;
+    }
+    return `${_path === "/" ? "" : _path}${subPath?.startsWith("/") ? subPath : `/${subPath}`}`;
   }
+
   const currentPath = useCurrentPath();
-  return `${currentPath.value === "/" ? "" : currentPath.value}${path?.startsWith("/") ? path : `/${path}`}`;
+
+  let _path = currentPath.value;
+  if (user.account?.isAdmin) {
+    _path = currentPath.value === "/" ? "" : currentPath.value;
+  } else if (currentPath.value === "/" || currentPath.value === "") {
+    // 根目录拼接为当前用户uniqueCode
+    _path = `/users/${user.account?.uniqueCode}`;
+  }
+
+  return `${_path}${path?.startsWith("/") ? path : `/${path}`}`;
 }
 
 export const useDiskStore = defineStore("disk", () => {
@@ -38,7 +76,7 @@ export const useDiskStore = defineStore("disk", () => {
   const roleType = ref<IRbacRoleType | undefined>();
   const renamedFile = ref<string>("");
   const currentPath = useCurrentPath();
-  const objects = ref<IObjectObjectInfo[]>([]);
+  const objects = ref<IObject[]>([]);
   const checkedMap = ref<Record<string, boolean>>({});
 
   // 过滤掉搜索项
@@ -57,14 +95,12 @@ export const useDiskStore = defineStore("disk", () => {
   const { runAsync: getObjects, loading } = useRequest(listObjects, {
     manual: true,
     debounceInterval: 100,
-    pollingInterval: 5000,
     onSuccess(res) {
       if (!isEqual(objects.value, res.data)) {
         objects.value = res.data || [];
       }
-      if (roleType.value !== res.roleType) {
-        roleType.value = res.roleType;
-      }
+
+      roleType.value = res.roleType || RbacRoleType.GUEST;
     },
   });
 
@@ -75,24 +111,6 @@ export const useDiskStore = defineStore("disk", () => {
       checkedMap.value = {};
     },
   );
-
-  // 测试代码，遍历获取文件夹下所有文件
-  // onMounted(async () => {
-  //   let count = 0;
-  //   const onFetch = async (path: string) => {
-  //     await listObjects({ path }).then((res) => {
-  //       if (!res.data?.length) return;
-  //       count += res.data.filter((item) => !item.isDir).length || 0;
-  //       console.log(count);
-  //       res.data
-  //         .filter((item) => item.isDir)
-  //         .forEach(async (item) => {
-  //           await onFetch(item.path);
-  //         });
-  //     });
-  //   };
-  //   await onFetch("/新川");
-  // });
 
   function getFile() {
     return getObjects({ path: currentPath.value });
@@ -111,6 +129,9 @@ export const useDiskStore = defineStore("disk", () => {
 
   return {
     searchName,
+    setSearchName(newName: string) {
+      searchName.value = newName;
+    },
     setCheckedMap,
     goToPath,
     loading,

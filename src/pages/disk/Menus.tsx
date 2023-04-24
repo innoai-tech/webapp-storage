@@ -1,4 +1,4 @@
-import { computed, createVNode, defineComponent, getCurrentInstance } from "vue";
+import { computed, createVNode, defineComponent, getCurrentInstance, watch } from "vue";
 import { Button, Dropdown, InputSearch, Menu, MenuItem, message, Modal, Tooltip } from "ant-design-vue";
 import { UploadModal } from "@src/pages/disk/upload";
 import {
@@ -15,11 +15,10 @@ import { TooltipButton } from "@src/components/tooltipsButton/index";
 import { CreateDirModal } from "@src/pages/disk/component/createDirModal";
 import { downloadDirs, downloadFiles } from "@src/plugins/download";
 import { CopyAndMoveDirFilesModal } from "@src/components/selectDirModal";
-import { useCurrentAccountStore } from "@src/pages/account";
-import { DirAuthModal, useDirAuthStore } from "@src/components/dirAuth";
+import { DirAuthModal } from "@src/components/dirAuth";
 import { useCurrentPath, useDiskStore } from "@src/pages/disk/store";
 import { useRequest } from "vue-request";
-import { createOperationTask, deleteDir, deleteObject } from "@src/src-clients/storage";
+import { deleteDir, deleteObject } from "@src/src-clients/storage";
 import { AuthButton } from "@src/components/authButton";
 import { last } from "lodash-es";
 
@@ -28,20 +27,9 @@ export const DiskMenus = defineComponent({
     const store = useDiskStore();
     const checkedMap = computed(() => store.checkedMap);
     const hasChecked = computed(() => Object.values(checkedMap.value).includes(true));
-    const currentUserStore = useCurrentAccountStore();
-    const dirAuthStore = useDirAuthStore();
-    const hasAuth = computed(() => currentUserStore.account?.isAdmin || dirAuthStore.currentUserRole !== "MEMBER");
+    const hasAuth = computed(() => store.roleType !== "GUEST" && store.roleType !== "MEMBER");
     const currentPath = useCurrentPath();
     const selectedObjects = computed(() => store.objects.filter((object) => !!checkedMap.value[object.path]));
-
-    // 看看有没有选中的文件
-    const hasSelectFile = computed(
-      () => store.objects.filter((object) => !!checkedMap.value[object.path] && !object.isDir).length,
-    );
-    // 选中的文件夹
-    const selectedDirs = computed(() =>
-      store.objects.filter((object) => !!checkedMap.value[object.path] && object.isDir),
-    );
 
     const { runAsync: objectDelete } = useRequest(deleteObject, {
       manual: true,
@@ -50,7 +38,7 @@ export const DiskMenus = defineComponent({
     return () => {
       return (
         <div class={"flex-shrink-0 mb-2 flex justify-between w-full items-center"}>
-          <div>
+          <div class={"flex-shrink-0 mb-2 flex-1 flex items-center flex-nowrap"}>
             <Dropdown
               trigger={"click"}
               v-slots={{
@@ -91,16 +79,16 @@ export const DiskMenus = defineComponent({
                   );
                 },
               }}>
-              <Button type={"primary"}>
+              <AuthButton type={"primary"} hasPermission={store.roleType !== "GUEST"}>
                 上传
                 <span class={"pl-1"}>
                   <UploadOutlined />
                 </span>
-              </Button>
+              </AuthButton>
             </Dropdown>
 
             <AuthButton
-              hasPermission={!hasAuth.value}
+              hasPermission={store.roleType !== "GUEST"}
               icon={<FileAddOutlined />}
               class={"flex items-center ml-2"}
               onClick={() => {
@@ -140,8 +128,9 @@ export const DiskMenus = defineComponent({
 
             <AuthButton
               class={"ml-2"}
-              hasPermission={hasAuth.value}
-              title={"无权限操作"}
+              adminHasPermission={false}
+              hasPermission={hasAuth.value && currentPath.value !== "/" && currentPath.value !== ""}
+              title={currentPath.value === "/" || currentPath.value === "" ? "根目录无法操作" : ""}
               onClick={() => {
                 Modal.confirm({
                   title: "权限管理",
@@ -260,9 +249,12 @@ export const DiskMenus = defineComponent({
                 },
               }}>
               <Tooltip title={selectedObjects.value.length ? "" : "请选择文件后再操作"}>
-                <Button class={"ml-2"} disabled={!selectedObjects.value.length}>
+                <AuthButton
+                  hasPermission={store.roleType !== "GUEST"}
+                  class={"ml-2"}
+                  disabled={!selectedObjects.value.length}>
                   <MoreOutlined title={"更多操作"} />
-                </Button>
+                </AuthButton>
               </Tooltip>
             </Dropdown>
 
@@ -282,10 +274,13 @@ export const DiskMenus = defineComponent({
           <div class={"w-48"}>
             <InputSearch
               defaultValue={store.searchName}
-              onSearch={(val) => {
-                store.searchName = val;
+              onBlur={(e) => {
+                store.setSearchName((e.target as any).value);
               }}
-              placeholder={"输入名称筛选"}
+              onSearch={(val) => {
+                store.setSearchName(val);
+              }}
+              placeholder={"输入名称后回车筛选"}
             />
           </div>
         </div>

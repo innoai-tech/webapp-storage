@@ -17,7 +17,7 @@ export const TaskLog = defineComponent({
         listOperation({
           size: size.value,
           offset: offset.value * size.value,
-          operator: searchAccountID.value,
+          accountID: searchAccountID.value,
         }),
       {
         refreshDeps: [searchAccountID, offset, size],

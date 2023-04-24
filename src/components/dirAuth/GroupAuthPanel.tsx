@@ -1,5 +1,5 @@
 import { computed, createVNode, defineComponent, onMounted, ref } from "vue";
-import { Dropdown, Menu, MenuItem, message, Modal, Select } from "ant-design-vue";
+import { Button, Dropdown, Menu, MenuItem, message, Modal, Select, Tooltip } from "ant-design-vue";
 import {
   bindDirGroupRole,
   displayRbacRoleType,
@@ -10,29 +10,37 @@ import {
 import { defineStore } from "pinia";
 import { useRequest } from "vue-request";
 import { IGroupAuthGroup, useDirAuthStore } from "./index";
-import { DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons-vue";
+import { DownOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from "@ant-design/icons-vue";
 import { useGroupsStore } from "@src/pages/org/orgPanel";
 import { toFullDate } from "@src/utils/date";
 import { useCurrentAccountStore } from "@src/pages/account";
 import { Table } from "@src/components/table";
 import { AuthButton } from "@src/components/authButton";
+import { useDiskStore } from "@src/pages/disk/store";
 
 export const useRoleOptions = () => {
-  const dirAuthStore = useDirAuthStore();
+  const store = useDiskStore();
 
   return computed(() => {
-    if (!dirAuthStore.currentUserRole) return [];
+    if (!store.roleType) return [];
     const currentUserStore = useCurrentAccountStore();
-    return dirAuthStore.currentUserRole === "OWNER" || currentUserStore.account?.isAdmin
+    return currentUserStore.account?.isAdmin
       ? Object.keys(RbacRoleType).map((key) => ({
           value: key,
           label: displayRbacRoleType(key as IRbacRoleType),
         }))
-      : // 非 owner 只能添加普通成员和访问者
-        [
+      : store.roleType === "OWNER"
+      ? [
+          { label: displayRbacRoleType(RbacRoleType.ADMIN), value: RbacRoleType.ADMIN },
           { label: displayRbacRoleType(RbacRoleType.MEMBER), value: RbacRoleType.MEMBER },
           { label: displayRbacRoleType(RbacRoleType.GUEST), value: RbacRoleType.GUEST },
-        ];
+        ]
+      : store.roleType === "ADMIN"
+      ? [
+          { label: displayRbacRoleType(RbacRoleType.MEMBER), value: RbacRoleType.MEMBER },
+          { label: displayRbacRoleType(RbacRoleType.GUEST), value: RbacRoleType.GUEST },
+        ]
+      : [];
   });
 };
 
@@ -99,6 +107,7 @@ export const GroupAuthPanel = defineComponent({
 
 function useColumns() {
   const roleOptions = useRoleOptions();
+  const store = useDiskStore();
   const dirAuthStore = useDirAuthStore();
   const { runAsync: bindGroupRole } = useRequest(bindDirGroupRole, {
     manual: true,
@@ -124,12 +133,31 @@ function useColumns() {
       width: 200,
     },
     {
-      title: "当前权限",
+      title: "当前角色",
       key: "roleType",
       dataKey: "roleType",
       width: 200,
       cellRenderer({ rowData }: { rowData: IGroupAuthGroup }) {
         return <span>{displayRbacRoleType(rowData.roleType) || "-"} </span>;
+      },
+      headerCellRenderer() {
+        return (
+          <div>
+            当前角色
+            <span class={"ml-2"}>
+              <Tooltip
+                title={
+                  <span
+                    class={
+                      "whitespace-break-spaces"
+                    }>{`访问者:  允许查看、下载文件\n成员:  除访问者的权限外，还允许上传、改名、复制、移动\n管理员:  除成员的权限外，还允许删除文件、分配权限(只能分配访问者、成员)\n拥有者:  除管理员的权限外，还允许分配管理员和拥有者权限
+              `}</span>
+                }>
+                <InfoCircleOutlined />
+              </Tooltip>
+            </span>
+          </div>
+        );
       },
     },
     {
@@ -190,7 +218,6 @@ function useColumns() {
                           <MenuItem
                             key={value}
                             onClick={() => {
-                              console.log(dirAuthStore.currentDir, "dirAuthStore.currentDir.path");
                               Modal.confirm({
                                 title: `确定修改权限为${label}?`,
                                 closable: true,
@@ -214,23 +241,15 @@ function useColumns() {
                   );
                 },
               }}>
-              <AuthButton
-                hasPermission={dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"}
-                type={"link"}
-                class={"p-0"}>
+              <Button type={"link"} class={"p-0"}>
                 {rowData.roleType ? "修改角色" : "添加角色"}
                 <DownOutlined />
-              </AuthButton>
+              </Button>
             </Dropdown>
             <AuthButton
-              hasPermission={dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"}
+              hasPermission={store?.roleType === "ADMIN" || store.roleType === "OWNER"}
               disabled={!rowData.roleType}
               class={"ml-2"}
-              title={
-                dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"
-                  ? "未设置任何权限"
-                  : "无权限操作"
-              }
               type={"link"}
               danger
               onClick={() => {

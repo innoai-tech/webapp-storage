@@ -9,7 +9,6 @@ import { Admin } from "@src/pages/admin";
 import { TaskLog } from "@src/pages/taskLog";
 import { Setting } from "@src/pages/setting";
 import { ClientManage } from "@src/pages/clientManage";
-
 export const routes = [
   { path: "/login", component: Index, name: "login" },
 
@@ -77,7 +76,7 @@ export const routes = [
             component: ClientManage,
             name: "clientManage",
             children: [],
-            meta: { title: "客户端管理" },
+            meta: { title: "凭证管理" },
           },
           {
             path: ":matchAll(.*)",

@@ -2,7 +2,7 @@ import { defineComponent, PropType, ref } from "vue";
 import { message, Modal, Progress } from "ant-design-vue";
 import { InboxOutlined, LoadingOutlined } from "@ant-design/icons-vue";
 import { useAuthorization } from "@src/plugins/request/axios";
-import { useCurrentPath, useDiskStore } from "@src/pages/disk/store";
+import { joinPath, useCurrentPath, useDiskStore } from "@src/pages/disk/store";
 import { invoke } from "@tauri-apps/api/tauri";
 import { open } from "@tauri-apps/api/dialog";
 import { v4 as uuid } from "uuid";
@@ -117,7 +117,8 @@ export const UploadModal = defineComponent({
                   if (diskStore.objects.find((item) => !item.isDir && item.name === fileName)) {
                     return message.warn("文件已存在");
                   }
-                  const filePath = `${currentPath.value === "/" ? "" : currentPath.value}/${fileName}`;
+                  const filePath = joinPath(fileName);
+                  console.log(filePath, "filePath");
                   const checkObjectUrl = `${baseUrl}/api/storage/v0/objects/check`;
                   const id = uuid();
                   const uploadData: ITransmission = {
@@ -135,7 +136,7 @@ export const UploadModal = defineComponent({
                     origin_path: filePath,
                     url: `${baseUrl}/api/storage/v0/objects/upload`,
                     auth: getAuthorization(),
-                    originPath: `${currentPath.value === "/" ? "" : currentPath.value}/${fileName}`,
+                    originPath: filePath,
                     localPath: _path,
                     id,
                   }).then(() => {
@@ -149,11 +150,17 @@ export const UploadModal = defineComponent({
                 let dirName = last(_path.split("/"))!;
                 // 如果重名了
                 if (diskStore.objects.filter((item) => item.isDir).find((dir) => dir.name === dirName)) {
-                  dirName = `${dirName}_${dayjs().format("YYYY_MM_DD_HH_mm")}`;
+                  dirName = `${dirName}_${dayjs().format("YYYY_MM_DD_HH_mm_ss")}`;
                 }
-                const newDirPath = `${currentPath.value === "/" ? "" : currentPath.value}/${dirName}`;
+
+                const newDirPath = joinPath(currentPath.value, dirName);
                 // 创建文件夹
-                createDirAsync({ path: newDirPath }).then(
+                const res = await createOperationTask({
+                  body: {
+                    desc: `上传文件夹${dirName}`,
+                  },
+                });
+                createDirAsync({ path: newDirPath, taskCode: res.taskCode }).then(
                   () => {
                     const id = uuid();
                     const checkObjectUrl = `${baseUrl}/api/storage/v0/objects/check`;
@@ -163,7 +170,7 @@ export const UploadModal = defineComponent({
                       url,
                       auth: getAuthorization(),
                       dirPath: _path,
-                      createTaskUrl: createOperationTask.getConfig({ body: { desc: "" } }).url,
+                      taskId: res.taskCode,
                       originPath: newDirPath,
                       id,
                     }).then(() => {

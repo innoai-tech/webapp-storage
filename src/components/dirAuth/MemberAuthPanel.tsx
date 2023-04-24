@@ -8,7 +8,7 @@ import {
   listDirUserRole,
   unBindDirUserRole,
 } from "@src/src-clients/storage";
-import { Dropdown, InputSearch, Menu, MenuItem, message, Modal, Tooltip } from "ant-design-vue";
+import { Button, Dropdown, InputSearch, Menu, MenuItem, message, Modal, Tooltip } from "ant-design-vue";
 import { toFullDate } from "@src/utils/date";
 import { useMembersStore } from "@src/pages/member";
 import { defineStore } from "pinia";
@@ -18,6 +18,7 @@ import { useDirAuthStore } from "@src/components/dirAuth/index";
 import { useRoleOptions } from "@src/components/dirAuth/GroupAuthPanel";
 import { Table } from "@src/components/table";
 import { AuthButton } from "@src/components/authButton";
+import { useDiskStore } from "@src/pages/disk/store";
 
 const useAuthGroupMemberPanelStore = defineStore("authGroupMemberPanel", () => {
   const searchName = ref("");
@@ -112,6 +113,7 @@ export const AuthGroupMemberPanel = defineComponent({
 function useColumns() {
   const roleOptions = useRoleOptions();
   const dirAuthStore = useDirAuthStore();
+  const store = useDiskStore();
   const authGroupMemberPanelStore = useAuthGroupMemberPanelStore();
   const { runAsync: bindDirUserRoleRequest } = useRequest(bindDirUserRole, {
     manual: true,
@@ -149,7 +151,7 @@ function useColumns() {
                   <span
                     class={
                       "whitespace-break-spaces"
-                    }>{`拥有者：可以查看、添加、删除文件。可以赋予其他人管理员和普通成员权限。\n管理员：可以查看、添加、删除文件。可以赋予其他人成员权限。\n成员：可以查看、添加文件。
+                    }>{`访问者:  允许查看、下载文件\n成员:  除访问者的权限外，还允许上传、改名、复制、移动\n管理员:  除成员的权限外，还允许删除文件、分配权限(只能分配访问者、成员)\n拥有者:  除管理员的权限外，还允许分配管理员和拥有者权限
               `}</span>
                 }>
                 <InfoCircleOutlined />
@@ -224,24 +226,14 @@ function useColumns() {
                   );
                 },
               }}>
-              <AuthButton
-                hasPermission={dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"}
-                type={"link"}
-                class={"p-0"}>
+              <Button type={"link"} class={"p-0"}>
                 {rowData.roleType ? "修改角色" : "添加角色"}
                 <DownOutlined />
-              </AuthButton>
+              </Button>
             </Dropdown>
 
             <AuthButton
-              hasPermission={
-                dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER" && !!rowData.roleType
-              }
-              title={
-                dirAuthStore.currentUserRole && dirAuthStore.currentUserRole !== "MEMBER"
-                  ? "未设置任何权限"
-                  : "无权限操作"
-              }
+              hasPermission={store.roleType === "ADMIN" || store.roleType === "OWNER"}
               class={"ml-2"}
               disabled={!rowData.roleType}
               type={"link"}

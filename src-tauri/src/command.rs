@@ -325,7 +325,7 @@ pub async fn upload_dir(
     dir_path: String,
     origin_path: String,
     check_object_url: String,
-    create_task_url: String,
+    task_id: String,
     auth: String,
     id: String,
     window: tauri::Window,
@@ -372,17 +372,6 @@ pub async fn upload_dir(
     let boxed_dir_path: Box<str> = dir_path.clone().into();
     let uploaded_len_clone = uploaded_len.clone();
     let current_complete_file_count = Arc::new(AtomicU64::new(0));
-
-    let task_id = match create_task(
-        create_task_url.clone(),
-        auth.clone(),
-        format!("上传文件夹{}", origin_path.clone()),
-    )
-    .await
-    {
-        Ok(res) => res,
-        Err(err) => format!("err: {:?}", err).to_string(),
-    };
 
     // 遍历存储的路径
     for path in &path_list {

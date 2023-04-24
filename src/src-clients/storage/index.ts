@@ -567,6 +567,7 @@ export const displayClient = (field: keyof IClient) => {
     displayUtilsDatatypesCreationUpdationDeletionTime(field as any) ||
     (
       {
+        accountID: "",
         clientID: "",
       } as { [key: string]: string }
     )[field]
@@ -695,6 +696,17 @@ export const displayGroupUserGroupDataList = (field: keyof IGroupUserGroupDataLi
   )[field];
 };
 
+export const displayObject = (field: keyof IObject) => {
+  return (
+    displayObjectObjectInfo(field as any) ||
+    (
+      {
+        owner: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
 export const displayObjectBindDirGroupRoleBody = (field: keyof IObjectBindDirGroupRoleBody) => {
   return (
     {
@@ -723,6 +735,16 @@ export const displayObjectDirMoveBody = (field: keyof IObjectDirMoveBody) => {
   return (
     {
       newPath: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayObjectDirOwner = (field: keyof IObjectDirOwner) => {
+  return (
+    {
+      accountID: "",
+      name: "",
+      uniqueCode: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -790,10 +812,9 @@ export const displayOperation = (field: keyof IOperation) => {
     displayUtilsDatatypesCreationTime(field as any) ||
     (
       {
+        account_ID: "操作者",
         desc: "描述",
         operationID: "操作ID",
-        operator: "操作者",
-        operatorType: "操作者类型",
         taskCode: "任务码",
       } as { [key: string]: string }
     )[field]
@@ -881,13 +902,6 @@ export const displayOperationOperationWithOperatorName = (field: keyof IOperatio
       } as { [key: string]: string }
     )[field]
   );
-};
-
-export const displayOperationOperatorType = (type: "ACCOUNT" | "CLIENT") => {
-  return {
-    ACCOUNT: "用户",
-    CLIENT: "客户端",
-  }[type];
 };
 
 export const displayRbacAccount = (field: keyof IRbacAccount) => {
@@ -1087,6 +1101,7 @@ export const listAccount = createApiInstance<
   {
     authorization?: string;
     accountID?: IAccountAccountID | IAccountAccountID[];
+    uniqueCode?: string | string[];
     identity?: string | string[];
     name?: string | string[];
     size?: number;
@@ -1098,6 +1113,7 @@ export const listAccount = createApiInstance<
   ({
     authorization: pAuthorization,
     accountID: pAccountID,
+    uniqueCode: pUniqueCode,
     identity: pIdentity,
     name: pName,
     size: pSize,
@@ -1109,6 +1125,7 @@ export const listAccount = createApiInstance<
       query: {
         authorization: pAuthorization,
         accountID: pAccountID,
+        uniqueCode: pUniqueCode,
         identity: pIdentity,
         name: pName,
         size: pSize,
@@ -1122,6 +1139,7 @@ export const listAdmin = createApiInstance<
   {
     authorization?: string;
     accountID?: IAccountAccountID | IAccountAccountID[];
+    uniqueCode?: string | string[];
     identity?: string | string[];
     name?: string | string[];
     size?: number;
@@ -1133,6 +1151,7 @@ export const listAdmin = createApiInstance<
   ({
     authorization: pAuthorization,
     accountID: pAccountID,
+    uniqueCode: pUniqueCode,
     identity: pIdentity,
     name: pName,
     size: pSize,
@@ -1144,6 +1163,7 @@ export const listAdmin = createApiInstance<
       query: {
         authorization: pAuthorization,
         accountID: pAccountID,
+        uniqueCode: pUniqueCode,
         identity: pIdentity,
         name: pName,
         size: pSize,
@@ -1225,6 +1245,7 @@ export const listDirUserRole = createApiInstance<
     path: string;
     taskCode?: string;
     accountID?: IAccountAccountID | IAccountAccountID[];
+    uniqueCode?: string | string[];
     identity?: string | string[];
     name?: string | string[];
     size?: number;
@@ -1238,6 +1259,7 @@ export const listDirUserRole = createApiInstance<
     path: pPath,
     taskCode: pTaskCode,
     accountID: pAccountID,
+    uniqueCode: pUniqueCode,
     identity: pIdentity,
     name: pName,
     size: pSize,
@@ -1251,6 +1273,7 @@ export const listDirUserRole = createApiInstance<
         path: pPath,
         taskCode: pTaskCode,
         accountID: pAccountID,
+        uniqueCode: pUniqueCode,
         identity: pIdentity,
         name: pName,
         size: pSize,
@@ -1291,6 +1314,7 @@ export const listGroupAccount = createApiInstance<
     authorization?: string;
     groupID: IGroupGroupID;
     accountID?: IAccountAccountID | IAccountAccountID[];
+    uniqueCode?: string | string[];
     identity?: string | string[];
     name?: string | string[];
     size?: number;
@@ -1304,6 +1328,7 @@ export const listGroupAccount = createApiInstance<
     authorization: pAuthorization,
     groupID: pGroupID,
     accountID: pAccountID,
+    uniqueCode: pUniqueCode,
     identity: pIdentity,
     name: pName,
     size: pSize,
@@ -1316,6 +1341,7 @@ export const listGroupAccount = createApiInstance<
       query: {
         authorization: pAuthorization,
         accountID: pAccountID,
+        uniqueCode: pUniqueCode,
         identity: pIdentity,
         name: pName,
         size: pSize,
@@ -1349,8 +1375,7 @@ export const listOperation = createApiInstance<
   {
     authorization?: string;
     operationID?: IOperationOperationID | IOperationOperationID[];
-    operator?: string | string[];
-    operatorType?: IOperationOperatorType | IOperationOperatorType[];
+    accountID?: IAccountAccountID | IAccountAccountID[];
     size?: number;
     offset?: number;
   },
@@ -1360,8 +1385,7 @@ export const listOperation = createApiInstance<
   ({
     authorization: pAuthorization,
     operationID: pOperationID,
-    operator: pOperator,
-    operatorType: pOperatorType,
+    accountID: pAccountID,
     size: pSize,
     offset: pOffset,
   }) => {
@@ -1371,8 +1395,7 @@ export const listOperation = createApiInstance<
       query: {
         authorization: pAuthorization,
         operationID: pOperationID,
-        operator: pOperator,
-        operatorType: pOperatorType,
+        accountID: pAccountID,
         size: pSize,
         offset: pOffset,
       },
@@ -1780,11 +1803,6 @@ export enum OperationOperationType {
   OBJECT = "OBJECT",
 }
 
-export enum OperationOperatorType {
-  ACCOUNT = "ACCOUNT",
-  CLIENT = "CLIENT",
-}
-
 export enum RbacRoleType {
   OWNER = "OWNER",
   ADMIN = "ADMIN",
@@ -1865,6 +1883,7 @@ export interface IClient
   extends IUtilsDatatypesPrimaryID,
     IClientClientInfo,
     IUtilsDatatypesCreationUpdationDeletionTime {
+  accountID: IAccountAccountID;
   clientID: string;
 }
 
@@ -1922,6 +1941,10 @@ export interface IGroupUserGroupDataList {
   total: number;
 }
 
+export interface IObject extends IObjectObjectInfo {
+  owner?: IObjectDirOwner;
+}
+
 export interface IObjectBindDirGroupRoleBody {
   roleType: IRbacRoleType;
 }
@@ -1938,12 +1961,18 @@ export interface IObjectDirMoveBody {
   newPath: string;
 }
 
+export interface IObjectDirOwner {
+  accountID: IAccountAccountID;
+  name: string;
+  uniqueCode: string;
+}
+
 export interface IObjectDirRenameBody {
   newPath: string;
 }
 
 export interface IObjectObjectDataList {
-  data: IObjectObjectInfo[];
+  data: IObject[];
   roleType?: IRbacRoleType;
 }
 
@@ -1972,10 +2001,9 @@ export interface IOpenapiObjectDataList {
 }
 
 export interface IOperation extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationTime {
+  account_ID: IAccountAccountID;
   desc: string;
   operationID: IOperationOperationID;
-  operator: string;
-  operatorType: IOperationOperatorType;
   taskCode: string;
 }
 
@@ -2075,7 +2103,7 @@ export type IAccountState = keyof typeof AccountState;
 
 export type IAuthOperatorCurrentUser = IAccountUser & {
   isAdmin: boolean;
-} & any;
+};
 
 export type IClientPermissions = string[];
 
@@ -2100,8 +2128,6 @@ export type IOperationOperationLogID = string;
 export type IOperationOperationState = keyof typeof OperationOperationState;
 
 export type IOperationOperationType = keyof typeof OperationOperationType;
-
-export type IOperationOperatorType = keyof typeof OperationOperatorType;
 
 export type IOperationText = string;
 

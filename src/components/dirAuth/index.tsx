@@ -3,8 +3,7 @@ import { TabPane, Tabs } from "ant-design-vue";
 import { defineStore } from "pinia";
 import { GroupAuthPanel } from "./GroupAuthPanel";
 import { AuthGroupMemberPanel } from "@src/components/dirAuth/MemberAuthPanel";
-import { useCurrentAccountStore } from "@src/pages/account";
-import { IGroup, IRbacGroupFull, IRbacRoleType, listDirGroupRole } from "@src/src-clients/storage";
+import { IGroup, IRbacRoleType, listDirGroupRole } from "@src/src-clients/storage";
 import { useRequest } from "vue-request";
 import { useRoute } from "vue-router";
 
@@ -25,7 +24,6 @@ export interface IGroupAuthGroup extends IGroup {
 export const useDirAuthStore = defineStore("dirAuth", () => {
   const tab = ref<"GROUP" | "MEMBER">("GROUP");
   const route = useRoute();
-  const currentAccountStore = useCurrentAccountStore();
   const currentDir = ref<{
     path: string;
     name: string;
@@ -42,7 +40,6 @@ export const useDirAuthStore = defineStore("dirAuth", () => {
   );
 
   const currentDirGroupRoleMap = computed(() => {
-    console.log(dirRoles.value?.data);
     return (
       dirRoles.value?.data?.reduce(
         (p, c) => ({
@@ -56,16 +53,8 @@ export const useDirAuthStore = defineStore("dirAuth", () => {
     );
   });
 
-  const currentUserRole = computed(() =>
-    currentAccountStore.account?.isAdmin
-      ? ("OWNER" as IRbacRoleType)
-      : (currentDirGroupRoleMap.value?.[currentAccountStore.account?.accountID || ""]?.roleType as
-          | IRbacRoleType
-          | undefined),
-  );
-
   watch(
-    () => route.name,
+    () => route?.name,
     () => {
       refreshDirRoles();
     },
@@ -74,7 +63,6 @@ export const useDirAuthStore = defineStore("dirAuth", () => {
   return {
     tab,
     currentDirGroupRoleMap,
-    currentUserRole,
     currentDir,
     refreshDirRoles,
     setTab(newTab: ITab) {
@@ -92,7 +80,6 @@ export const DirAuthModal = defineComponent({
   },
   setup(props) {
     const tabStore = useDirAuthStore();
-    const currentAccountStore = useCurrentAccountStore();
 
     watch(
       () => props.dir,
@@ -117,11 +104,10 @@ export const DirAuthModal = defineComponent({
             <TabPane key={Tab.GROUP} tab={displayTab(Tab.GROUP)}>
               <GroupAuthPanel />
             </TabPane>
-            {currentAccountStore.account?.isAdmin && (
-              <TabPane key={Tab.MEMBER} tab={displayTab(Tab.MEMBER)}>
-                <AuthGroupMemberPanel />
-              </TabPane>
-            )}
+
+            <TabPane key={Tab.MEMBER} tab={displayTab(Tab.MEMBER)}>
+              <AuthGroupMemberPanel />
+            </TabPane>
           </Tabs>
         </div>
       );

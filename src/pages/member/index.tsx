@@ -10,7 +10,7 @@ export const useMembersStore = defineStore("members", () => {
   const {
     data: members,
     refresh,
-    run,
+    runAsync,
   } = useRequest(() => listAccount({ size: -1 }), {
     refreshOnWindowFocus: true,
     manual: true,
@@ -18,7 +18,7 @@ export const useMembersStore = defineStore("members", () => {
   return {
     members,
     refresh,
-    getMembers: run,
+    getMembers: runAsync,
   };
 });
 

@@ -3,6 +3,7 @@ import { RouterView, useRouter } from "vue-router";
 import { useAuth } from "@src/plugins/auth/index";
 import { useRefreshToken } from "@src/plugins/auth/useRefreshToken";
 import dayjs from "dayjs";
+import { useCurrentAccountStore } from "@src/pages/account";
 
 export const MustLogin = defineComponent({
   setup: function () {
@@ -10,8 +11,10 @@ export const MustLogin = defineComponent({
 
     const auth = useAuth();
 
+    // 依赖用户信息的地方太多了，所以手动改一下，必须获取到用户信息再进入页面
+    const accountStore = useCurrentAccountStore();
     const isValidToken = computed(() => {
-      return auth.access?.expiresDate && auth.access.expiresDate - dayjs().valueOf() > 100;
+      return auth.access?.expiresDate && auth.access.expiresDate - dayjs().valueOf() > 0;
     });
     watch(
       () => isValidToken.value,
@@ -32,6 +35,6 @@ export const MustLogin = defineComponent({
     // 定时刷新
     useRefreshToken();
 
-    return () => (auth.access && isValidToken ? <RouterView></RouterView> : null);
+    return () => (isValidToken.value && accountStore?.account ? <RouterView></RouterView> : null);
   },
 });
