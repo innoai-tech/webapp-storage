@@ -1,12 +1,13 @@
 import { open } from "@tauri-apps/api/dialog";
 import { downloadDir } from "@tauri-apps/api/path";
-import { getObject, IObjectObjectInfo, listObjects } from "@src/src-clients/storage";
+import { createOperationTask, getObject, IObjectObjectInfo, listObjects } from "@src/src-clients/storage";
 import { invoke } from "@tauri-apps/api/tauri";
 import { useAuthorization } from "@src/plugins/request/axios";
 import { useTransmissionStore } from "@src/pages/transmission";
 import { ITransmission } from "@src/pages/transmission/interface";
 import { v4 as uuid } from "uuid";
 import dayjs from "dayjs";
+import { toFullTime } from "@src/utils/date";
 
 export const downloadFiles = async (files: { name: string; size: number; path: string }[]) => {
   const getAuthorization = useAuthorization();
@@ -70,6 +71,7 @@ export const downloadDirs = async (dirs: IObjectObjectInfo[]) => {
     directory: true,
     defaultPath: await downloadDir(),
   });
+
   if (path?.length) {
     const _path = Array.isArray(path) ? path[0] : path;
     const _dirs = dirs.map((item) => {
@@ -101,6 +103,7 @@ export const downloadDirs = async (dirs: IObjectObjectInfo[]) => {
           local_path: _path,
           auth: getAuthorization(),
           dirs: _dirs.map((item) => ({
+            create_task_url: createOperationTask.getConfig({ body: { desc: "" } }).url,
             name: item.name,
             path: item.path,
             id: item.id,

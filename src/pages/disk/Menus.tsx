@@ -19,7 +19,7 @@ import { useCurrentAccountStore } from "@src/pages/account";
 import { DirAuthModal, useDirAuthStore } from "@src/components/dirAuth";
 import { useCurrentPath, useDiskStore } from "@src/pages/disk/store";
 import { useRequest } from "vue-request";
-import { deleteDir, deleteObject } from "@src/src-clients/storage";
+import { createOperationTask, deleteDir, deleteObject } from "@src/src-clients/storage";
 import { AuthButton } from "@src/components/authButton";
 import { last } from "lodash-es";
 

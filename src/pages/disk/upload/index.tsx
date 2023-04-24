@@ -13,7 +13,7 @@ import { ITransmission } from "@src/pages/transmission/interface";
 import dayjs from "dayjs";
 import { useSettingStore } from "@src/pages/setting";
 import { useRequest } from "vue-request";
-import { createDir } from "@src/src-clients/storage";
+import { createDir, createOperationTask } from "@src/src-clients/storage";
 
 export const replaceFileName = (name: string): string => {
   return name?.replaceAll(":", "：").replaceAll("/", "_");
@@ -163,6 +163,7 @@ export const UploadModal = defineComponent({
                       url,
                       auth: getAuthorization(),
                       dirPath: _path,
+                      createTaskUrl: createOperationTask.getConfig({ body: { desc: "" } }).url,
                       originPath: newDirPath,
                       id,
                     }).then(() => {

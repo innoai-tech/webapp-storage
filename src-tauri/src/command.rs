@@ -1,6 +1,7 @@
 use crate::data_store::{
     DOWNLOAD_COMPLETE_STORE, DOWNLOAD_PROGRESS_STORE, UPLOAD_COMPLETE_STORE, UPLOAD_PROGRESS_STORE,
 };
+use crate::download::create_task;
 use crate::download::{download, download_dir};
 use crate::queue::{DOWNLOAD_CONCURRENT_QUEUE, UPLOAD_CONCURRENT_QUEUE};
 use crate::upload::upload;
@@ -26,6 +27,7 @@ pub struct DownloadDirsParams {
 
 #[derive(serde::Deserialize)]
 pub struct DownloadDirsParamsData {
+    create_task_url: String, // 下载前创建一个任务，然后把这批次的文件都带入任务 id 合并一下
     path: String,
     name: String,
     id: String,
@@ -45,6 +47,7 @@ pub async fn download_dirs(dirs_json_str: String) {
     for dir in dirs {
         let id = dir.id.clone();
         let _id = id.clone();
+        let create_task_url = dir.create_task_url.clone();
         let get_files_base_url = get_files_base_url.clone();
         let download_files_base_url = download_files_base_url.clone();
         let local_path = local_path.clone();
@@ -65,6 +68,7 @@ pub async fn download_dirs(dirs_json_str: String) {
                         auth.clone(),
                         id.clone(),
                         total_file_count.clone(),
+                        create_task_url.clone(),
                     )
                     .await
                     {
@@ -135,6 +139,7 @@ pub async fn download_files(files_json_str: String) -> String {
                         id.clone(),
                         Arc::new(AtomicU64::new(0)),
                         size.clone(),
+                        None,
                     )
                     .await
                     {
@@ -202,6 +207,7 @@ pub async fn upload_file(
                             uploaded_len,
                             total_len,
                             window,
+                            None,
                         )
                         .await
                         {
@@ -278,6 +284,7 @@ pub async fn upload_files(files_json_str: String, window: tauri::Window) {
                                 uploaded_size_len,
                                 total_size_len,
                                 window,
+                                None,
                             )
                             .await
                             {
@@ -318,6 +325,7 @@ pub async fn upload_dir(
     dir_path: String,
     origin_path: String,
     check_object_url: String,
+    create_task_url: String,
     auth: String,
     id: String,
     window: tauri::Window,
@@ -365,6 +373,17 @@ pub async fn upload_dir(
     let uploaded_len_clone = uploaded_len.clone();
     let current_complete_file_count = Arc::new(AtomicU64::new(0));
 
+    let task_id = match create_task(
+        create_task_url.clone(),
+        auth.clone(),
+        format!("上传文件夹{}", origin_path.clone()),
+    )
+    .await
+    {
+        Ok(res) => res,
+        Err(err) => format!("err: {:?}", err).to_string(),
+    };
+
     // 遍历存储的路径
     for path in &path_list {
         let _path = path.clone();
@@ -374,6 +393,7 @@ pub async fn upload_dir(
         let _check_object_url = check_object_url.clone();
         let _url = url.clone();
         let _id = id.clone();
+        let _task_id = task_id.clone();
         let _auth = auth.clone();
         let _window = window.clone();
         // 文件夹的远程 path 是用固定的远程系统内的文件夹 path + 相对于这个 path 的路径，这里需要处理一下
@@ -392,6 +412,7 @@ pub async fn upload_dir(
                 let rt = tokio::runtime::Runtime::new().unwrap();
                 rt.block_on(async {
                     let path = _path.clone();
+
                     match upload(
                         _url,
                         _check_object_url,
@@ -402,6 +423,7 @@ pub async fn upload_dir(
                         uploaded_len_clone_inner,
                         total_len_clone_inner.clone(),
                         _window,
+                        Some(_task_id.clone()),
                     )
                     .await
                     {

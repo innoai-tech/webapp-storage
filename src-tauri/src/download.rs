@@ -15,6 +15,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
+use std::{error::Error, fmt};
 use url::Url;
 // 定义结构体，用于存储下载进度
 #[derive(Clone, serde::Serialize)]
@@ -38,6 +39,7 @@ pub async fn download_core(
     id: String,                              // 文件唯一标识符
     current_downloaded_size: Arc<AtomicU64>, // 当前下载的尺寸，主要是兼容文件夹下载，文件下载固定传入 0
     total_size: u64,                         // 下载的总大小
+    task_id: Option<String>,                 // 任务ID
 ) -> Result<(), Box<dyn std::error::Error>> {
     const FRAGMENT: &AsciiSet = &CONTROLS
         .add(b' ')
@@ -46,7 +48,26 @@ pub async fn download_core(
         .add(b'>')
         .add(b'`')
         .add(b'#');
-    let url = utf8_percent_encode(&url.clone(), FRAGMENT).to_string();
+
+    // 拼接下载文件URL，先给 url 做个转码处理，然后添加 taskcode 进去
+
+    let url = match task_id {
+        Some(id) => {
+            match Url::parse_with_params(
+                &utf8_percent_encode(&url.clone(), FRAGMENT).to_string(),
+                &[("taskCode", id)],
+            ) {
+                Ok(url) => url,
+                Err(e) => {
+                    eprintln!("获取文件：{} 的sha256失败: {:?}", local_path.clone(), e);
+                    return Err(Box::new(e));
+                }
+            }
+        }
+        // 如果不传入task_id则直接解析url
+        None => Url::parse(&utf8_percent_encode(&url.clone(), FRAGMENT).to_string()).unwrap(),
+    };
+
     // 将文件名称中非法字符替换为下划线
     let file_name = format!(
         "{}",
@@ -143,6 +164,7 @@ pub async fn download(
     id: String,                              // 文件唯一标识符
     current_downloaded_size: Arc<AtomicU64>, // 当前下载的尺寸，主要是兼容文件夹下载，文件下载固定传入 0
     total_size: u64,                         // 文件下载的总大小
+    task_id: Option<String>,                 //任务 id
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut retry_count: u64 = 0;
     loop {
@@ -154,6 +176,7 @@ pub async fn download(
             id.clone(),
             current_downloaded_size.clone(),
             total_size.clone(),
+            task_id.clone(),
         )
         .await
         {
@@ -187,8 +210,9 @@ pub async fn download_dir(
     auth: String,                     // 请求头中的 Authorization 字段
     id: String,                       // 文件唯一标识符
     total_file_count: Arc<AtomicU64>, // 总下载数量
+    create_task_url: String,          // 创建任务 url
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // 支持重试
+    // 获取文件列表
     let files = get_files(
         get_files_base_url.clone(),
         local_path.clone(),
@@ -197,7 +221,13 @@ pub async fn download_dir(
         auth.clone(),
     )
     .await?;
-
+    // 创建这批次任务 ID
+    let task_id = create_task(
+        create_task_url.clone(),
+        auth.clone(),
+        format!("下载文件夹{}", dir_name.clone()),
+    )
+    .await?;
     let files_total_size = files.iter().fold(0, |acc, file| acc + file.size);
     let downloaded_size = Arc::new(AtomicU64::new(0));
 
@@ -245,7 +275,9 @@ pub async fn download_dir(
         let file_name = file_name.clone();
         let auth = auth.clone();
         let url = url.clone();
+
         let local_path = local_path.to_string().clone();
+        let task_id = task_id.clone();
 
         DOWNLOAD_CONCURRENT_QUEUE.push(
             move || {
@@ -259,6 +291,7 @@ pub async fn download_dir(
                         id.clone(),
                         downloaded_size.clone(),
                         files_total_size,
+                        Some(task_id),
                     )
                     .await
                     {
@@ -286,6 +319,20 @@ pub async fn download_dir(
     Ok(())
 }
 
+// 获取文件的响应
+#[derive(serde::Deserialize)]
+pub struct GetFilesResData {
+    #[serde(rename = "isDir")]
+    is_dir: bool,
+    name: String,
+    path: String,
+    size: u64,
+}
+
+#[derive(serde::Deserialize)]
+pub struct GetFilesRes {
+    data: Vec<GetFilesResData>,
+}
 #[async_recursion]
 async fn get_files(
     url: String,
@@ -367,16 +414,78 @@ async fn get_files(
     Ok(files)
 }
 
+// 创建任务的响应
 #[derive(serde::Deserialize)]
-pub struct GetFilesRes {
-    data: Vec<GetFilesResData>,
+pub struct CreateTaskRes {
+    #[serde(rename = "taskCode")]
+    task_code: String,
+}
+//请求参数
+#[derive(Clone, serde::Serialize, Debug)]
+pub struct CreateTaskReq {
+    desc: String,
+}
+#[async_recursion]
+pub async fn create_task(url: String, auth: String, desc: String) -> Result<String, Box<MyError>> {
+    // 支持重试
+    let retry_policy = ExponentialBackoff {
+        max_n_retries: 3,
+        max_retry_interval: std::time::Duration::from_millis(10000),
+        min_retry_interval: std::time::Duration::from_millis(3000),
+        backoff_exponent: 2,
+    };
+
+    let req_body = CreateTaskReq {
+        desc: format!("{}", desc),
+    };
+    let client = ClientBuilder::new(reqwest::Client::new())
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
+    let err = MyError {
+        message: format!("创建任务失败"),
+    };
+    match client
+        .post(url)
+        .timeout(Duration::from_secs(300))
+        .bearer_auth(auth.clone())
+        .json(&req_body)
+        .send()
+        .await
+    {
+        Ok(res) => {
+            if res.status().is_success() {
+                let res_json_str = match res.json::<CreateTaskRes>().await {
+                    Ok(res) => res,
+                    Err(_) => {
+                        println!("解析任务响应信息失败");
+                        return Err(err.into());
+                    }
+                };
+                return Ok(res_json_str.task_code);
+            } else {
+                let status = res.status();
+                println!("创建任务失败 CODE: {}", status);
+                return Err(Box::new(err));
+            }
+        }
+        Err(err) => {
+            let my_err = MyError {
+                message: format!("创建任务失败: {:?}", err),
+            };
+            return Err(my_err.into());
+        }
+    };
 }
 
-#[derive(serde::Deserialize)]
-pub struct GetFilesResData {
-    #[serde(rename = "isDir")]
-    is_dir: bool,
-    name: String,
-    path: String,
-    size: u64,
+#[derive(Clone, serde::Serialize, Debug)]
+pub struct MyError {
+    message: String,
 }
+
+impl fmt::Display for MyError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl Error for MyError {}

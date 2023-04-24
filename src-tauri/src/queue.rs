@@ -45,7 +45,6 @@ impl ConcurrentQueue {
     // 将任务加入队列
     pub fn push<T: FnOnce() + Send + 'static>(&self, task: T, task_id: String) {
         let task = Box::new(task);
-        println!("id 已添加: {}", task_id);
         let _ = self.sender.lock().unwrap().send((task, task_id));
     }
 

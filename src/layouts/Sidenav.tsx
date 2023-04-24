@@ -62,7 +62,6 @@ export const Sidenav = defineComponent({
           icon: <ReconciliationOutlined />,
           label: "操作记录",
           key: "taskLog",
-          show: currentUserStore.account?.isAdmin,
         },
         {
           icon: <ApartmentOutlined />,

@@ -32,6 +32,8 @@ pub async fn upload_core(
     // 文件总长度
     total_len: Arc<AtomicU64>,
     window: tauri::Window,
+    // 携带一个任务 id
+    task_id: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 支持重试
     let retry_policy = ExponentialBackoff {
@@ -69,21 +71,20 @@ pub async fn upload_core(
     };
 
     // 拼接上传文件URL
-    let url = match Url::parse_with_params(
-        &url.clone(),
-        &[
-            ("authorization", auth.clone()),
-            ("path", origin_path.clone()),
-            ("SHA256", sha256.clone()),
-            ("content-type", content_type.to_string()),
-        ],
-    ) {
-        Ok(url) => url,
-        Err(e) => {
-            eprintln!("获取文件：{} 的sha256失败: {:?}", local_path.clone(), e);
-            return Err(Box::new(e));
-        }
-    };
+    let mut params = vec![
+        ("authorization", auth.clone()),
+        ("path", origin_path.clone()),
+        ("SHA256", sha256.clone()),
+        ("content-type", content_type.to_string()),
+    ];
+    if let Some(task_id) = task_id {
+        params.push(("taskCode", task_id.to_string()));
+    }
+    let url = Url::parse_with_params(&url, &params).map_err(|e| {
+        eprintln!("获取文件：{} 的sha256失败: {:?}", local_path.clone(), e);
+        Box::new(e)
+    })?;
+
     // 拼接检查对象是否存在的URL
     let check_object_url = match Url::parse_with_params(
         &check_object_url.clone(),
@@ -245,7 +246,12 @@ pub async fn upload(
     // 文件总长度
     total_len: Arc<AtomicU64>,
     window: tauri::Window,
+    // 创建任务
+    task_id: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // 创建这批次任务 ID
+
+    // 获取文件size
     let mut retry_count: u64 = 0;
     let file_size = match metadata(local_path.clone()) {
         Ok(metadata) => metadata.len(),
@@ -254,6 +260,7 @@ pub async fn upload(
             return Err(Box::new(e));
         }
     };
+
     loop {
         match upload_core(
             url.clone(),
@@ -265,6 +272,7 @@ pub async fn upload(
             uploaded_len.clone(),
             total_len.clone(),
             window.clone(),
+            task_id.clone(),
         )
         .await
         {
@@ -304,7 +312,7 @@ pub async fn upload(
 }
 
 #[derive(Clone, serde::Serialize, Debug)]
-struct MyError {
+pub struct MyError {
     message: String,
 }
 
