@@ -1,5 +1,5 @@
 # Updater Log
 
-## v0.0.14
+## v0.0.15
 
-- fix: ubuntu 增加 18.0.4 支持
+- fix: 请求改为 rust 代理
