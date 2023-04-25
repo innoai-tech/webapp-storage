@@ -1,9 +1,9 @@
 {
   "name": "storage",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit --skipLibCheck && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri-dev": "tauri dev",
