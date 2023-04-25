@@ -1,8 +1,8 @@
-import { defineComponent, onMounted, PropType, ref } from "vue";
+import { createVNode, defineComponent, onMounted, PropType, ref } from "vue";
 import { Button, Form, FormItem, Input, message, Modal, Space, Tooltip } from "ant-design-vue";
 import { useClientsStore } from "@src/pages/clientManage/index";
 import { v4 as uuid } from "uuid";
-import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons-vue";
+import { ExclamationCircleOutlined, MinusCircleOutlined, PlusOutlined } from "@ant-design/icons-vue";
 import { IClient } from "@src/src-clients/storage";
 import { SecretContent } from "@src/pages/clientManage/SecretContent";
 interface IFormState {
@@ -72,7 +72,9 @@ export const CreateClientModal = defineComponent({
                       },
                     })
                     .then(() => {
+                      clientsStore.refresh();
                       message.success("编辑成功");
+                      Modal.destroyAll();
                     })
                 : clientsStore
                     .createClientRequest(formState.value.clientID, {
@@ -82,18 +84,15 @@ export const CreateClientModal = defineComponent({
                       whiteList: formState.value.whiteList.map((item) => item.ip).filter((item) => item),
                     })
                     .then((res) => {
+                      clientsStore.refresh();
                       clientSecret.value = res.clientSecret;
                       clientID.value = res.clientID;
+
                       message.success("创建成功");
                     })
-              )
-                .finally(() => {
-                  loading.value = false;
-                })
-                .then(() => {
-                  Modal.destroyAll();
-                  clientsStore.refresh();
-                });
+              ).finally(() => {
+                loading.value = false;
+              });
             }}>
             <Tooltip title={props.client ? "无法修改Client ID" : ""}>
               <FormItem

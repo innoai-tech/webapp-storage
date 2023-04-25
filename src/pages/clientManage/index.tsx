@@ -102,7 +102,7 @@ export const ClientManage = defineComponent({
                       wrapClassName: "confirmModal",
                     });
                   }}>
-                  添加客户端
+                  添加凭证
                 </AuthButton>
               </div>
               <div>
