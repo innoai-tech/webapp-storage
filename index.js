@@ -1,24 +1,13 @@
-const fs = require("fs");
-const path = require("path");
+const http = require("http");
+// 创建http服务器
+const server = http.createServer((req, res) => {
+  // 设置响应头信息
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  // 发送响应消息
+  res.end("Hello World!\n");
+});
 
-const localPath = "/Users/jinzhuming/Downloads/芷泉街";
-const targetPath = "/Users/jinzhuming/Downloads/图片";
-
-function moveFiles(sourceDir, targetDir) {
-  fs.readdirSync(sourceDir).forEach((file) => {
-    const sourceFile = path.join(sourceDir, file);
-    const targetFile = path.join(targetDir, file);
-
-    if (fs.statSync(sourceFile).isDirectory()) {
-      // 如果是文件夹则递归移动其内部文件
-      moveFiles(sourceFile, targetDir);
-      // 移动完内部文件后删除空文件夹
-      fs.rmdirSync(sourceFile);
-    } else {
-      // 如果是文件则直接移动
-      fs.renameSync(sourceFile, targetFile);
-    }
-  });
-}
-
-moveFiles(localPath, targetPath);
+// 启动服务并绑定到端口3003
+server.listen(3003, () => {
+  console.log("Server is running on port 3003");
+});

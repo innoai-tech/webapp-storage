@@ -4,8 +4,8 @@ import { stringify } from "qs";
 import { AxiosResponseHeaders, AxiosRequestConfig } from "axios";
 import { toSearchString } from "../router/helpers";
 import { useSettingStore } from "@src/pages/setting";
+import { fetch, ResponseType } from "@tauri-apps/api/http";
 declare type IMethod = "GET" | "DELETE" | "HEAD" | "POST" | "PUT" | "PATCH";
-
 export interface IRequestOpts {
   method: IMethod | "";
   url: string;
@@ -66,18 +66,35 @@ export function createApiInstance<TReq, TResBody>(name: string, requestOptsFromR
     const requestOpts = requestOptsFromReq(arg || ({} as TReq));
     // const options = transOptions(requestOpts)
     return new Promise<TResBody>((resolve, reject) => {
-      return axiosRequester
-        .request<TResBody>({
-          baseURL,
-          ...(transOptions(requestOpts) as any),
-          ...opt,
+      const options = {
+        baseURL,
+        ...(transOptions(requestOpts) as any),
+        ...opt,
+      };
+
+      // @ts-ignore
+      if ((import.meta as any).env.PROD) {
+        return fetch(`${options.baseURL}${options.url}${toSearchString(options.params)}`, {
+          method: options.method,
+          body: options.body,
         })
-        .then((res) => {
-          resolve(res.data);
-        })
-        .catch((err) => {
-          reject(err);
-        });
+          .then((res: any) => {
+            console.log(res, "fetch res");
+            resolve(res.data);
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      } else {
+        return axiosRequester
+          .request<TResBody>(options)
+          .then((res) => {
+            resolve(res.data);
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      }
     });
   };
   req._name = name;

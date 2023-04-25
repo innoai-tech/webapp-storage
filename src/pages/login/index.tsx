@@ -13,7 +13,8 @@ import { v4 as uuid } from "uuid";
 import "./index.less";
 import { Button, Modal, Card } from "ant-design-vue";
 import { Setting } from "@src/pages/setting";
-
+import { fetch } from "@tauri-apps/api/http";
+import http from "@src/plugins/http";
 export const Index = defineComponent({
   setup() {
     const loading = ref(false);
@@ -52,6 +53,7 @@ export const Index = defineComponent({
         runExchange({ code: parseSearchString(location.search).code, name: parseSearchString(location.search).name });
       }
     });
+
     return () => (
       <div class="login relative">
         <div class={"absolute bottom-4 left-4 text-xs"}>
@@ -69,6 +71,14 @@ export const Index = defineComponent({
               });
             }}>
             域名配置
+          </Button>
+          <Button
+            onClick={async () => {
+              const response = await http("http://localhost:3003", {
+                methods: "GET",
+              });
+            }}>
+            ceshi
           </Button>
         </div>
         <Card title={"AI 数据管理工具"} class={"login-card fixed"}>

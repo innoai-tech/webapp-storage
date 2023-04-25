@@ -16,6 +16,11 @@
       "path": {
         "all": true
       },
+      "http": {
+        "request": true,
+        "scope": ["https://*/*", "http://*/*"],
+        "all": true
+      },
       "clipboard": {
         "all": true
       },

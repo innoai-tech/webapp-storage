@@ -1,7 +1,6 @@
 use crate::data_store::{
     DOWNLOAD_COMPLETE_STORE, DOWNLOAD_PROGRESS_STORE, UPLOAD_COMPLETE_STORE, UPLOAD_PROGRESS_STORE,
 };
-use crate::download::create_task;
 use crate::download::{download, download_dir};
 use crate::queue::{DOWNLOAD_CONCURRENT_QUEUE, UPLOAD_CONCURRENT_QUEUE};
 use crate::upload::upload;

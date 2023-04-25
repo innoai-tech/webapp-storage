@@ -177,10 +177,6 @@ pub async fn upload_core(
 
             let total = _total_len.load(Ordering::Relaxed);
             // 更新已上传长度
-            println!(
-                "更新进度{} ",
-                _uploaded_len.load(Ordering::Relaxed)
-            );
             _uploaded_len.fetch_add(len, Ordering::Relaxed);
             let new_len = _uploaded_len.load(Ordering::Relaxed);
 
