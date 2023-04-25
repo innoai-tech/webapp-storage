@@ -2,8 +2,9 @@ name: Release CI
 
 on:
   push:
-    branches:
-      - "ubuntu-18-builder"
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
   create-release:
@@ -26,8 +27,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v1
-          release_name: storage
+          tag_name: "${{ steps.get_version.outputs.VERSION }}"
+          release_name: "storage ${{ steps.get_version.outputs.VERSION }}"
           body: "See the assets to download this version and install."
 
   build-ubuntu:
@@ -41,8 +42,22 @@ jobs:
 
       - name: build image
         run: make
+
       - name: build application
         run: make build.linux
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./src-tauri/target/release/bundle/deb/storage_0.0.18_arm64.deb
+          tag: "${{ steps.get_version.outputs.VERSION }}"
+          release_name: "${{ steps.get_version.outputs.VERSION }}"
+          overwrite: true
+          file_glob: true
+
   build-tauri:
     needs: create-release
     strategy:
