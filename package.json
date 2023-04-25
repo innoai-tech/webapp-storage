@@ -3,7 +3,7 @@
   "version": "0.0.14",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit --skipLibCheck && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri-dev": "tauri dev",
