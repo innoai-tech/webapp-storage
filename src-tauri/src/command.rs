@@ -76,9 +76,9 @@ pub async fn download_dirs(dirs_json_str: String) {
                             let err_str = format!("ID:{} \n \n  DOWNLOAD ERR: {}", id.clone(), err);
                             // 失败的时候判断一下下载完了吗，下载完了就结束，没下载完插入一个错误信息
                             let count = downloaded_file_count.fetch_add(1, Ordering::Relaxed);
-                            // 获取的是 -1 前的值，所以手动-1 判断一下是否都下载完毕了
-                            println!("{}", count);
-                            if total_file_count.load(Ordering::Relaxed) == count + 1 {
+                            let total = total_file_count.load(Ordering::Relaxed);
+                            // 获取count的是 +1 前的值，所以手动 +1添加当前任务，判断一下是否都下载完毕了，如果是 0 代表没有文件也当做下完了
+                            if total == 0 || total == count + 1 {
                                 DOWNLOAD_COMPLETE_STORE
                                     .lock()
                                     .unwrap()

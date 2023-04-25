@@ -53,7 +53,7 @@ export const UploadModal = defineComponent({
         <div
           onClick={async () => {
             const path = await open({
-              title: "选择下载位置",
+              title: "选择上传位置",
               directory: props.mode === "DIR",
               defaultPath: await downloadDir(),
               // 文件夹暂时不支持多选上传
@@ -188,7 +188,7 @@ export const UploadModal = defineComponent({
                         ].concat(transmissionStore.uploadList),
                       );
                       Modal.destroyAll();
-                      message.success("文件夹已开始下载");
+                      message.success("文件夹已开始上传");
                     });
                   },
                   () => {

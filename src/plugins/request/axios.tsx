@@ -8,7 +8,7 @@ import { message } from "ant-design-vue";
 
 export const axiosRequester = axios.create();
 
-const useTalkErrorMsgStore = defineStore("calkErrorMsg", () => {
+export const useTalkErrorMsgStore = defineStore("calkErrorMsg", () => {
   const messages = ref<string[]>([]);
   return {
     messages,
@@ -135,7 +135,7 @@ export const AxiosRequester = defineComponent({
 });
 
 // 遍历去掉空格
-function trimString(property: any) {
+export function trimString(property: any) {
   // 如果是字符串，直接 trim
   if (typeof property === "string") {
     return property.trim();

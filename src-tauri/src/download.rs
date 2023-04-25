@@ -153,6 +153,7 @@ pub async fn download_core(
         Err(e) => println!("Error 重命名文件失败: {}", e),
     }
 
+    println!("下砸已成功");
     Ok(())
 }
 
@@ -213,14 +214,11 @@ pub async fn download_dir(
     create_task_url: String,          // 创建任务 url
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 获取文件列表
-    let files = get_files(
-        get_files_base_url.clone(),
-        local_path.clone(),
-        dir_name.clone(),
-        dir_path.clone(),
-        auth.clone(),
-    )
-    .await?;
+    let files = get_files(get_files_base_url.clone(), dir_path.clone(), auth.clone()).await?;
+    println!("文件内容：{:?}", files.len());
+    if files.len() == 0 {
+        return Err("文件夹内没有任何文件".into());
+    }
     // 创建这批次任务 ID
     let task_id = create_task(
         create_task_url.clone(),
@@ -296,10 +294,11 @@ pub async fn download_dir(
                     .await
                     {
                         Ok(_) => {
-                            //  +1 并且获取一下值
+                            // 失败的时候判断一下下载完了吗，下载完了就结束，没下载完插入一个错误信息
                             let count = downloaded_file_count.fetch_add(1, Ordering::Relaxed);
-                            // 获取的是 +1 前的值，所以手动+1 判断一下是否都下载完毕了
-                            if total_file_count.load(Ordering::Relaxed) == count + 1 {
+                            let total = total_file_count.load(Ordering::Relaxed);
+                            // 获取count的是 +1 前的值，所以手动 +1添加当前任务，判断一下是否都下载完毕了，如果是 0 代表没有文件也当做下完了
+                            if total == 0 || total == count + 1 {
                                 DOWNLOAD_COMPLETE_STORE
                                     .lock()
                                     .unwrap()
@@ -319,9 +318,8 @@ pub async fn download_dir(
     Ok(())
 }
 
-// 获取文件的响应
-#[derive(serde::Deserialize)]
-pub struct GetFilesResData {
+#[derive(serde::Deserialize, Debug)]
+struct GetFilesResData {
     #[serde(rename = "isDir")]
     is_dir: bool,
     name: String,
@@ -329,32 +327,24 @@ pub struct GetFilesResData {
     size: u64,
 }
 
-#[derive(serde::Deserialize)]
-pub struct GetFilesRes {
-    data: Vec<GetFilesResData>,
+#[derive(serde::Deserialize, Debug)]
+struct GetFilesRes {
+    data: Option<Vec<GetFilesResData>>,
 }
+
 #[async_recursion]
 async fn get_files(
     url: String,
-    local_path: String,
-    dir_name: String,
-    path: String, // 服务器上存的 path
+    path: String,
     auth: String,
 ) -> Result<Vec<GetFilesResData>, Box<dyn std::error::Error>> {
-    // 拼接一下文件夹路径
-    let mut local_path_buf = PathBuf::from(local_path.clone());
-    local_path_buf.push(dir_name.clone());
-    let dir_path = local_path_buf.to_str().unwrap();
-
     let base_url = url.clone();
     let url = match Url::parse_with_params(
         &url.clone(),
         &[("authorization", auth.clone()), ("path", path.clone())],
     ) {
         Ok(url) => url.to_string(),
-        Err(err) => {
-            return Err(err.into());
-        }
+        Err(err) => return Err(err.into()),
     };
 
     // 支持重试
@@ -368,8 +358,6 @@ async fn get_files(
     let client = ClientBuilder::new(reqwest::Client::new())
         .with(RetryTransientMiddleware::new_with_policy(retry_policy))
         .build();
-    let mut dirs: Vec<GetFilesResData> = vec![];
-    let mut files: Vec<GetFilesResData> = vec![];
 
     match client
         .get(url)
@@ -379,41 +367,48 @@ async fn get_files(
         .await
     {
         Ok(res) => {
+            let mut files: Vec<GetFilesResData> = vec![];
             if res.status().is_success() {
-                let res_json_str = res.json::<GetFilesRes>().await?;
-                for item in res_json_str.data {
-                    if item.is_dir {
-                        dirs.push(item)
-                    } else {
-                        files.push(item)
-                    }
-                }
+                let res_json = res.json::<GetFilesRes>().await?;
 
-                for dir in dirs {
-                    // 拼接一下当前文件夹完整路径
-                    let dir_files = get_files(
-                        base_url.clone(),
-                        dir_path.to_string().clone(),
-                        dir.name.clone(),
-                        dir.path.clone(),
-                        auth.clone(),
-                    )
-                    .await?;
-                    files.extend(dir_files);
+                match res_json.data {
+                    Some(d) => {
+                        for item in d {
+                            if item.is_dir {
+                                // 如果是文件夹，递归获取子文件
+                                match get_files(base_url.clone(), item.path.clone(), auth.clone())
+                                    .await
+                                {
+                                    Ok(dir_files) => {
+                                        files.extend(dir_files);
+                                    }
+                                    Err(err) => {
+                                        println!("获取子文件失败: {:?}", err);
+                                        return Err(err.into());
+                                    }
+                                }
+                            } else {
+                                // 如果是文件，直接添加到文件列表中
+                                files.push(item);
+                            }
+                        }
+                        Ok(files)
+                    }
+                    None => Ok(files),
                 }
             } else {
                 let status = res.status();
                 let body = res.text().await?;
                 println!("文件夹下载失败: CODE: {}, BODY: {:?}", status, body);
+                Ok(files)
             }
         }
         Err(err) => {
             println!("错误了: {:?}", err);
+            Err(err.into())
         }
-    };
-    Ok(files)
+    }
 }
-
 // 创建任务的响应
 #[derive(serde::Deserialize)]
 pub struct CreateTaskRes {
