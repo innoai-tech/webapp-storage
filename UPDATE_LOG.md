@@ -1,5 +1,5 @@
 # Updater Log
 
-## v0.0.16
+## v0.0.17
 
-- fix: 请求改为 rust 代理
+- fix: 修改 ubuntu 版本
