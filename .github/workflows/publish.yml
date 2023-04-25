@@ -47,13 +47,25 @@ jobs:
         run: make build.linux
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./src-tauri/target/release/bundle/deb/storage_0.0.19_amd64.deb
-          tag: "${{ steps.get_version.outputs.VERSION }}"
-          release_name: "${{ steps.get_version.outputs.VERSION }}"
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: "storage ${{ steps.get_version.outputs.version }}"
+          body: |
+            See the assets to download this version and install.
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/release/bundle/deb/storage_${{ steps.get_version.outputs.version }}_amd64.deb
+          asset_name: storage_${{ steps.get_version.outputs.version }}_amd64.deb
+          asset_content_type: application/octet-stream
           overwrite: true
-          file_glob: true
