@@ -2,9 +2,8 @@ name: Release CI
 
 on:
   push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
+    branches:
+      - "ubuntu-18-builder"
 
 jobs:
   create-release:
@@ -27,10 +26,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: "${{ steps.get_version.outputs.VERSION }}"
-          release_name: "storage ${{ steps.get_version.outputs.VERSION }}"
+          tag_name: v1
+          release_name: storage
           body: "See the assets to download this version and install."
 
+  build-ubuntu:
+    needs: create-release
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v3
+
+      - name: build image
+        run: make
+      - name: build application
+        run: make build.linux
   build-tauri:
     needs: create-release
     strategy:
