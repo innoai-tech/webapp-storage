@@ -52,66 +52,8 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./src-tauri/target/release/bundle/deb/storage_0.0.18_arm64.deb
+          file: ./src-tauri/target/release/bundle/deb/storage_0.0.19_amd64.deb
           tag: "${{ steps.get_version.outputs.VERSION }}"
           release_name: "${{ steps.get_version.outputs.VERSION }}"
           overwrite: true
           file_glob: true
-
-  build-tauri:
-    needs: create-release
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [ubuntu-latest, macos-latest, windows-latest]
-
-    runs-on: ${{ matrix.platform }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-20.04'
-        # You can remove libayatana-appindicator3-dev if you don't use the system tray feature.
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev
-
-      - name: Rust setup
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./src-tauri -> target"
-
-      - name: Sync node version and setup cache
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16.17.0"
-
-      - name: Install pnpm
-        run: npm install -g pnpm@6.2.1
-
-      - name: Install frontend dependencies
-        run: pnpm install
-
-      - name: Build the app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_PROVIDER_SHORT_NAME: ${{ secrets.APPLE_PROVIDER_SHORT_NAME }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-        with:
-          releaseId: ${{ needs.create-release.outputs.RELEASE_UPLOAD_ID }}
-          tagName: ${{ github.ref_name }}
-          releaseName: "storage v__VERSION__" # tauri-action replaces \_\_VERSION\_\_ with the app version.
-          releaseBody: "See the assets to download and install this version."
