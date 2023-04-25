@@ -23,7 +23,6 @@ import { startsWith } from "@querycap/lodash";
   const conf = {} as { [key: string]: string };
   for (const i in appConfig) {
     if (startsWith(i, "SRV")) {
-      console.log(i);
       const getValue = (appConfig as any)[i];
       conf[i] = `${getValue("", "")}/api`;
     }

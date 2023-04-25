@@ -1,10 +1,12 @@
 // import { appConf } from "@src/config";
-import { axiosRequester, useAuthorization } from "./axios";
+import { axiosRequester, trimString, useAuthorization, useTalkErrorMsgStore } from "./axios";
 import { stringify } from "qs";
 import { AxiosResponseHeaders, AxiosRequestConfig } from "axios";
 import { toSearchString } from "../router/helpers";
 import { useSettingStore } from "@src/pages/setting";
-import { fetch, ResponseType } from "@tauri-apps/api/http";
+import { fetch, Body, ResponseType } from "@tauri-apps/api/http";
+import { StatusUnauthorized } from "@src/plugins/request/status";
+import { useAuth } from "@src/plugins/auth";
 declare type IMethod = "GET" | "DELETE" | "HEAD" | "POST" | "PUT" | "PATCH";
 export interface IRequestOpts {
   method: IMethod | "";
@@ -64,8 +66,9 @@ export function createApiInstance<TReq, TResBody>(name: string, requestOptsFromR
   const req: IReq<TReq, TResBody> = function (arg, opt = {}) {
     const baseURL = getBaseURL(name);
     const requestOpts = requestOptsFromReq(arg || ({} as TReq));
-    // const options = transOptions(requestOpts)
+    const talkErrorMsgStore = useTalkErrorMsgStore();
     return new Promise<TResBody>((resolve, reject) => {
+      const accessStore = useAuth();
       const options = {
         baseURL,
         ...(transOptions(requestOpts) as any),
@@ -73,19 +76,7 @@ export function createApiInstance<TReq, TResBody>(name: string, requestOptsFromR
       };
 
       // @ts-ignore
-      if ((import.meta as any).env.PROD) {
-        return fetch(`${options.baseURL}${options.url}${toSearchString(options.params)}`, {
-          method: options.method,
-          body: options.body,
-        })
-          .then((res: any) => {
-            console.log(res, "fetch res");
-            resolve(res.data);
-          })
-          .catch((err) => {
-            reject(err);
-          });
-      } else {
+      if ((import.meta as any).env.DEV && !window.__TAURI_IPC__) {
         return axiosRequester
           .request<TResBody>(options)
           .then((res) => {
@@ -95,6 +86,39 @@ export function createApiInstance<TReq, TResBody>(name: string, requestOptsFromR
             reject(err);
           });
       }
+
+      return fetch(`${options.baseURL}${options.url}${toSearchString(options.params)}`, {
+        method: options.method,
+        body: options.data ? Body.json(trimString(Object.assign({}, options.data))) : undefined,
+      })
+        .then((res: any) => {
+          if (res.status >= 200 && res.status < 300) {
+            resolve(res.data);
+          }
+
+          const responseData = res.data;
+          // 提示错误信息
+          if (responseData?.msg && responseData?.canBeTalkError) {
+            talkErrorMsgStore.pushMessages(responseData.msg);
+          }
+
+          // 401 清除掉登录信息
+          if (res.status === StatusUnauthorized) {
+            accessStore.setAccess(null);
+          }
+          reject(res);
+        })
+        .catch((err) => {
+          if (
+            (err as string).includes(
+              "Network Error: Io Error: corrupt deflate stream: Io Error: corrupt deflate stream",
+            )
+          ) {
+            resolve({ status: 204, data: null } as any);
+          } else {
+            reject(err);
+          }
+        });
     });
   };
   req._name = name;

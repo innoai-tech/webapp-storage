@@ -88,7 +88,7 @@ export const DiskMenus = defineComponent({
             </Dropdown>
 
             <AuthButton
-              hasPermission={store.roleType !== "GUEST"}
+              hasPermission={true}
               icon={<FileAddOutlined />}
               class={"flex items-center ml-2"}
               onClick={() => {
