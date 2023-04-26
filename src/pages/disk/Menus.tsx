@@ -21,6 +21,8 @@ import { useRequest } from "vue-request";
 import { deleteDir, deleteObject } from "@src/src-clients/storage";
 import { AuthButton } from "@src/components/authButton";
 import { last } from "lodash-es";
+import { open } from "@tauri-apps/api/dialog";
+import { downloadDir } from "@tauri-apps/api/path";
 
 export const DiskMenus = defineComponent({
   setup() {
@@ -110,14 +112,24 @@ export const DiskMenus = defineComponent({
               title={"请选中后操作"}
               class={"ml-2"}
               disabled={!hasChecked.value}
-              onClick={() => {
+              onClick={async () => {
                 const files = store.objects.filter((obj) => !obj.isDir && checkedMap.value[obj.path]);
                 const dirs = store.objects.filter((obj) => obj.isDir && checkedMap.value[obj.path]);
-                if (files.length) {
-                  downloadFiles(files);
-                }
-                if (dirs.length) {
-                  downloadDirs(dirs);
+                const path = await open({
+                  title: "选择下载位置",
+                  directory: true,
+                  defaultPath: await downloadDir(),
+                });
+                if (path?.length) {
+                  const _path = Array.isArray(path) ? path[0] : path;
+                  if (files.length) {
+                    downloadFiles(files, _path);
+                  }
+                  if (dirs.length) {
+                    downloadDirs(dirs, _path);
+                  }
+                } else {
+                  message.warn("未选择任何路径");
                 }
               }}>
               下载
