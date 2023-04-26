@@ -57,7 +57,7 @@ export const Admin = defineComponent({
     const columns = useColumns();
     return () => {
       return (
-        <div>
+        <div class={"flex flex-1 flex-col"}>
           <div class={"flex justify-end sticky top-0 bg-white mb-4"}>
             <div class={"flex flex-1 justify-between"}>
               <div class={"flex gap-2"}>

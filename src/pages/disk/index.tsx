@@ -42,6 +42,12 @@ export const Disk = defineComponent({
     });
     const breadCrumbPathsStore = useBreadCrumbPathsStore();
 
+    watch(
+      () => store.objects,
+      () => {
+        console.log(store.objects, "store.objects");
+      },
+    );
     return () => {
       return (
         <div class={"w-full h-full flex flex-col"} ref={domRef}>

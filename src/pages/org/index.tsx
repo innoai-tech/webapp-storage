@@ -31,8 +31,9 @@ export const Org = defineComponent({
     });
     return () => {
       return (
-        <div>
+        <div class={"flex flex-1 flex-col"}>
           <Tabs
+            class={"flex flex-1 flex-col"}
             activeKey={tabStore.tab}
             destroyInactiveTabPane={true}
             onChange={(tab) => {
