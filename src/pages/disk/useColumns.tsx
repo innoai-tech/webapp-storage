@@ -227,7 +227,7 @@ export const useColumns = () => {
                     <Menu>
                       <MenuItem>
                         <AuthButton
-                          class={"m-0 p-0"}
+                          class={"m-0 px-10 w-full"}
                           hasPermission={store.roleType !== "GUEST"}
                           type={"link"}
                           onClick={() => {
@@ -253,6 +253,7 @@ export const useColumns = () => {
                       </MenuItem>
                       <MenuItem>
                         <AuthButton
+                          class={"px-10 w-full"}
                           type={"link"}
                           hasPermission={store.roleType !== "GUEST"}
                           onClick={() => {
@@ -279,6 +280,7 @@ export const useColumns = () => {
                       <MenuItem>
                         <AuthButton
                           type={"link"}
+                          class={"px-10 w-full"}
                           hasPermission={store.roleType !== "GUEST"}
                           onClick={() => {
                             Modal.confirm({
@@ -302,6 +304,7 @@ export const useColumns = () => {
                       {rowData.isDir && (
                         <MenuItem>
                           <AuthButton
+                            class={"px-10 w-full"}
                             type={"link"}
                             hasPermission={store.roleType !== "MEMBER" && store.roleType !== "GUEST"}
                             danger
@@ -324,6 +327,7 @@ export const useColumns = () => {
                       )}
                       <MenuItem>
                         <AuthButton
+                          class={"px-10 w-full"}
                           type={"link"}
                           hasPermission={store.roleType !== "GUEST" && store.roleType !== "MEMBER"}
                           danger

@@ -696,17 +696,6 @@ export const displayGroupUserGroupDataList = (field: keyof IGroupUserGroupDataLi
   )[field];
 };
 
-export const displayObject = (field: keyof IObject) => {
-  return (
-    displayObjectObjectInfo(field as any) ||
-    (
-      {
-        owner: "",
-      } as { [key: string]: string }
-    )[field]
-  );
-};
-
 export const displayObjectBindDirGroupRoleBody = (field: keyof IObjectBindDirGroupRoleBody) => {
   return (
     {
@@ -735,16 +724,6 @@ export const displayObjectDirMoveBody = (field: keyof IObjectDirMoveBody) => {
   return (
     {
       newPath: "",
-    } as { [key: string]: string }
-  )[field];
-};
-
-export const displayObjectDirOwner = (field: keyof IObjectDirOwner) => {
-  return (
-    {
-      accountID: "",
-      name: "",
-      uniqueCode: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -1010,6 +989,27 @@ export const displayRepositoryClientWithSecret = (field: keyof IRepositoryClient
       clientSecret: "",
     } as { [key: string]: string }
   )[field];
+};
+
+export const displayServerControllerObjectCtlDirOwner = (field: keyof IServerControllerObjectCtlDirOwner) => {
+  return (
+    {
+      accountID: "",
+      name: "",
+      uniqueCode: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayServerControllerObjectCtlObject = (field: keyof IServerControllerObjectCtlObject) => {
+  return (
+    displayObjectObjectInfo(field as any) ||
+    (
+      {
+        owner: "",
+      } as { [key: string]: string }
+    )[field]
+  );
 };
 
 export const displayUtilsDatatypesCreationTime = (field: keyof IUtilsDatatypesCreationTime) => {
@@ -1463,41 +1463,27 @@ export const objectRename = createApiInstance<
 
 export const objectUpload = createApiInstance<
   {
-    authorization?: string;
-    path: string;
-    taskCode?: string;
     "content-type": string;
     SHA256: string;
+    Path: string;
     body: any;
   },
   null
->(
-  "storage.ObjectUpload",
-  ({
-    authorization: pAuthorization,
-    path: pPath,
-    taskCode: pTaskCode,
-    "content-type": pContentType,
-    SHA256: pSha256,
-    body: pBody,
-  }) => {
-    return {
-      method: "POST",
-      url: `/api/storage/v0/objects/upload`,
-      data: pBody,
-      query: {
-        authorization: pAuthorization,
-        path: pPath,
-        taskCode: pTaskCode,
-        "content-type": pContentType,
-        SHA256: pSha256,
-      },
-      headers: {
-        "Content-Type": "application/octet-stream",
-      },
-    };
-  },
-);
+>("storage.ObjectUpload", ({ "content-type": pContentType, SHA256: pSha256, Path: pPath, body: pBody }) => {
+  return {
+    method: "POST",
+    url: `/api/storage/v0/openapi/objects/upload`,
+    data: pBody,
+    query: {
+      "content-type": pContentType,
+      SHA256: pSha256,
+      Path: pPath,
+    },
+    headers: {
+      "Content-Type": "application/octet-stream",
+    },
+  };
+});
 
 export const objectsCopy = createApiInstance<
   {
@@ -1575,15 +1561,17 @@ export const openapiListObjects = createApiInstance<
   {
     dir: string;
     onlyDir?: IDatatypesBool;
+    uniqueCode?: string;
   },
   IOpenapiObjectDataList
->("storage.OpenapiListObjects", ({ dir: pDir, onlyDir: pOnlyDir }) => {
+>("storage.OpenapiListObjects", ({ dir: pDir, onlyDir: pOnlyDir, uniqueCode: pUniqueCode }) => {
   return {
     method: "GET",
     url: `/api/storage/v0/openapi/objects/list`,
     query: {
       dir: pDir,
       onlyDir: pOnlyDir,
+      uniqueCode: pUniqueCode,
     },
   };
 });
@@ -1941,10 +1929,6 @@ export interface IGroupUserGroupDataList {
   total: number;
 }
 
-export interface IObject extends IObjectObjectInfo {
-  owner?: IObjectDirOwner;
-}
-
 export interface IObjectBindDirGroupRoleBody {
   roleType: IRbacRoleType;
 }
@@ -1961,18 +1945,12 @@ export interface IObjectDirMoveBody {
   newPath: string;
 }
 
-export interface IObjectDirOwner {
-  accountID: IAccountAccountID;
-  name: string;
-  uniqueCode: string;
-}
-
 export interface IObjectDirRenameBody {
   newPath: string;
 }
 
 export interface IObjectObjectDataList {
-  data: IObject[];
+  data: IServerControllerObjectCtlObject[];
   roleType?: IRbacRoleType;
 }
 
@@ -1997,7 +1975,7 @@ export interface IObjectObjectsCopyParam {
 }
 
 export interface IOpenapiObjectDataList {
-  data: IObjectObjectInfo[];
+  data: IServerControllerObjectCtlObject[];
 }
 
 export interface IOperation extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationTime {
@@ -2085,6 +2063,16 @@ export interface IRepositoryClientWithSecret {
   clientSecret: string;
 }
 
+export interface IServerControllerObjectCtlDirOwner {
+  accountID: IAccountAccountID;
+  name: string;
+  uniqueCode: string;
+}
+
+export interface IServerControllerObjectCtlObject extends IObjectObjectInfo {
+  owner?: IServerControllerObjectCtlDirOwner;
+}
+
 export interface IUtilsDatatypesCreationTime {
   createdAt: IDatatypesTimestamp;
 }
@@ -2103,7 +2091,7 @@ export type IAccountState = keyof typeof AccountState;
 
 export type IAuthOperatorCurrentUser = IAccountUser & {
   isAdmin: boolean;
-};
+} & any;
 
 export type IClientPermissions = string[];
 
