@@ -31,6 +31,8 @@ import {
 import { useVideosViewerStore } from "@src/components/videosviewer";
 import { AuthButton } from "@src/components/authButton";
 import { useCurrentAccountStore } from "@src/pages/account";
+import { open } from "@tauri-apps/api/dialog";
+import { downloadDir } from "@tauri-apps/api/path";
 
 export const useColumns = () => {
   const pathsStore = usePathsStore();
@@ -208,11 +210,24 @@ export const useColumns = () => {
               hasPermission={store.roleType !== "GUEST"}
               class={"ml-2"}
               type={"link"}
-              onClick={() => {
-                if (rowData.isDir) {
-                  downloadDirs([rowData]);
+              onClick={async () => {
+                const files = store.objects.filter((obj) => !obj.isDir && checkedMap.value[obj.path]);
+                const dirs = store.objects.filter((obj) => obj.isDir && checkedMap.value[obj.path]);
+                const path = await open({
+                  title: "选择下载位置",
+                  directory: true,
+                  defaultPath: await downloadDir(),
+                });
+                if (path?.length) {
+                  const _path = Array.isArray(path) ? path[0] : path;
+
+                  if (rowData.isDir) {
+                    downloadDirs([rowData], _path);
+                  } else {
+                    downloadFiles([rowData], _path);
+                  }
                 } else {
-                  downloadFiles([rowData]);
+                  message.warn("未选择任何路径");
                 }
               }}>
               下载
@@ -224,7 +239,7 @@ export const useColumns = () => {
               v-slots={{
                 overlay() {
                   return (
-                    <Menu>
+                    <Menu class={"no-padding"}>
                       <MenuItem>
                         <AuthButton
                           class={"m-0 px-10 w-full"}

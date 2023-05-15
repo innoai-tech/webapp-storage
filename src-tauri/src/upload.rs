@@ -299,7 +299,6 @@ pub async fn upload(
         .await
         {
             Ok(res) => {
-                println!("1");
                 let total = total_len.load(Ordering::Relaxed);
                 uploaded_len.fetch_add(file_size, Ordering::Relaxed);
                 let new_len = uploaded_len.load(Ordering::Relaxed);
@@ -312,15 +311,12 @@ pub async fn upload(
             }
             Err(e) => {
                 if retry_count < 3 {
-                    println!("2");
                     retry_count += 1;
                     let timestamp = Local::now().to_rfc3339_opts(SecondsFormat::Secs, true);
                     let delay_ms: u64 = retry_count.pow(retry_count.try_into().unwrap()) * 1000;
                     tokio::time::sleep(Duration::from_millis(delay_ms)).await;
                     println!("上传失败重试中... ({}/3), {}", retry_count, timestamp);
                 } else {
-                    println!("3");
-                    println!("彻底失败了");
                     let total = total_len.load(Ordering::Relaxed);
                     uploaded_len.fetch_add(file_size, Ordering::Relaxed);
                     let new_len = uploaded_len.load(Ordering::Relaxed);
