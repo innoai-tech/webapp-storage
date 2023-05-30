@@ -4,5 +4,5 @@ import { App } from "@src/App";
 import { router } from "./plugins/router";
 import { pinia } from "@src/store";
 import "./assets/css/index";
-
-createApp(App).use(pinia).use(router).mount("#app");
+alert("create");
+createApp(App).use(pinia).mount("#app");
