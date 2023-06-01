@@ -103,7 +103,7 @@ export const Sidenav = defineComponent({
           </div>
           <Button
             type={"link"}
-            class={"absolute bottom-10 left-4 text-xs"}
+            class={"absolute bottom-14 left-4 text-xs"}
             onClick={() => {
               authStore.setAccess(null);
             }}>

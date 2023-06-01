@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 import { computed, onUnmounted, ref, watch } from "vue";
 import { IServerControllerObjectCtlObject, IRbacRoleType, listObjects, RbacRoleType } from "@src/src-clients/storage";
 import { useRequest } from "vue-request";
-import { isEqual } from "lodash-es";
 import { useCurrentAccountStore } from "@src/pages/account";
 import { debounce } from "@querycap/lodash";
 
@@ -100,12 +99,8 @@ export const useDiskStore = defineStore("disk", () => {
     manual: true,
     debounceInterval: 100,
     onSuccess(res) {
-      if (!isEqual(objects.value, res.data)) {
-        objects.value = objects.value.concat(res.data || []);
-      }
       total.value = res.total || 0;
-
-      roleType.value = res.roleType || RbacRoleType.GUEST;
+      objects.value = objects.value.concat(res.data || []);
     },
   });
 
@@ -162,6 +157,10 @@ export const useDiskStore = defineStore("disk", () => {
     getFiles: getFile,
     refreshFiles: () =>
       new Promise((resolve) => {
+        objects.value = [];
+        offset.value = 0;
+        objects.value = [];
+        total.value = 0;
         refresh();
         resolve("");
       }),

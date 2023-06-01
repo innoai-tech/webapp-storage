@@ -31,7 +31,7 @@ export const App = defineComponent({
         <AxiosRequester>
           <ConfigProvider locale={antdZhCN}>
             <ElConfigProvider locale={zhCN}>
-              1<RouterView></RouterView>
+              <RouterView></RouterView>
               <VideosViewer />
               <ImagesViewer />
             </ElConfigProvider>

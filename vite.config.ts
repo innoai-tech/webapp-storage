@@ -23,6 +23,7 @@ export default defineConfig(async () => ({
   server: {
     port: 1420,
     strictPort: true,
+    host: "0.0.0.0",
   },
 
   resolve: {
