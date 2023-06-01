@@ -101,9 +101,10 @@ export const CreateClientModal = defineComponent({
                       desc: formState.value.desc,
                       whiteList: formState.value.whiteList.map((item) => item.ip).filter((item) => item),
                     },
-                  }).then(() => {
+                  }).then((res) => {
+                    clientSecret.value = res.clientSecret;
+                    clientID.value = res.clientID;
                     message.success("创建成功");
-                    emit("close");
                   });
                 }
                 return;

@@ -1,5 +1,5 @@
 # Updater Log
 
-## v0.0.25
+## v0.0.26
 
-- fix 禁止 csp
+- fix 创建组织凭证添加 client 显示
