@@ -3,11 +3,15 @@ import { CopyOutlined } from "@ant-design/icons-vue";
 import { writeText } from "@tauri-apps/api/clipboard";
 import { Button, message, Modal, Space } from "ant-design-vue";
 import { useRequest } from "vue-request";
-import { refreshClientSecret } from "@src/src-clients/storage";
+import { refreshAccountClientSecret, refreshGroupClientSecret } from "@src/src-clients/storage";
 import { Tooltip } from "ant-design-vue";
 
 export const SecretContent = defineComponent({
   props: {
+    groupID: {
+      type: String,
+      required: false,
+    },
     clientID: {
       type: String,
       required: true,
@@ -17,9 +21,11 @@ export const SecretContent = defineComponent({
       required: false,
     },
   },
-  setup(props) {
+  emits: ["close"],
+  setup(props, { emit }) {
     const secret = ref(props.secret);
-    const { runAsync: refreshSecret } = useRequest(refreshClientSecret, { manual: true });
+    const { runAsync: refreshSecret } = useRequest(refreshAccountClientSecret, { manual: true });
+    const { runAsync: refreshGroupSecret } = useRequest(refreshGroupClientSecret, { manual: true });
     return () => {
       return (
         <div>
@@ -49,7 +55,7 @@ export const SecretContent = defineComponent({
           <div class={"flex justify-end gap-3"}>
             <Button
               onClick={() => {
-                Modal.destroyAll();
+                emit("close");
               }}>
               取消
             </Button>
@@ -57,12 +63,19 @@ export const SecretContent = defineComponent({
               type={"primary"}
               onClick={() => {
                 if (secret.value) {
-                  Modal.destroyAll();
+                  emit("close");
                 } else {
-                  refreshSecret({ clientID: props.clientID }).then((res) => {
-                    secret.value = res.clientSecret;
-                    message.success("刷新成功，请复制 Secret");
-                  });
+                  if (props.groupID) {
+                    refreshGroupSecret({ clientID: props.clientID, groupID: props.groupID }).then((res) => {
+                      secret.value = res.clientSecret;
+                      message.success("刷新成功，请复制 Secret");
+                    });
+                  } else {
+                    refreshSecret({ clientID: props.clientID }).then((res) => {
+                      secret.value = res.clientSecret;
+                      message.success("刷新成功，请复制 Secret");
+                    });
+                  }
                 }
               }}>
               确定

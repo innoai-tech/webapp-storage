@@ -66,7 +66,6 @@ export const RenameFileModal = defineComponent({
               }
               loading.value = true;
               if (props.mode === "DIR") {
-                console.log(1);
                 renameDir({
                   path: props.path,
                   body: {

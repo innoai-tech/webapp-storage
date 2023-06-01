@@ -1,5 +1,16 @@
-import { computed, createVNode, defineComponent, getCurrentInstance, watch } from "vue";
-import { Button, Dropdown, InputSearch, Menu, MenuItem, message, Modal, Tooltip } from "ant-design-vue";
+import { computed, createVNode, defineComponent, getCurrentInstance, ref, watch } from "vue";
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  InputSearch,
+  Menu,
+  MenuItem,
+  message,
+  Modal,
+  Select,
+  Tooltip,
+} from "ant-design-vue";
 import { UploadModal } from "@src/pages/disk/upload";
 import {
   CloudDownloadOutlined,
@@ -9,6 +20,7 @@ import {
   KeyOutlined,
   MoreOutlined,
   RedoOutlined,
+  SlidersOutlined,
   UploadOutlined,
 } from "@ant-design/icons-vue";
 import { TooltipButton } from "@src/components/tooltipsButton/index";
@@ -16,25 +28,47 @@ import { CreateDirModal } from "@src/pages/disk/component/createDirModal";
 import { downloadDirs, downloadFiles } from "@src/plugins/download";
 import { CopyAndMoveDirFilesModal } from "@src/components/selectDirModal";
 import { DirAuthModal } from "@src/components/dirAuth";
-import { useCurrentPath, useDiskStore } from "@src/pages/disk/store";
+import { useBreadCrumbPathsStore, useCurrentPath, useDiskStore, usePathsStore } from "@src/pages/disk/store";
 import { useRequest } from "vue-request";
-import { deleteDir, deleteObject } from "@src/src-clients/storage";
+import {
+  IObjectObjectSearchDataList,
+  deleteDir,
+  deleteObject,
+  dirSearch,
+  dirStatistics,
+} from "@src/src-clients/storage";
 import { AuthButton } from "@src/components/authButton";
 import { last } from "lodash-es";
 import { open } from "@tauri-apps/api/dialog";
 import { downloadDir } from "@tauri-apps/api/path";
+import { getFileSize } from "@src/utils/getFileSize";
+import { debounce } from "@querycap/lodash";
+import { TextEllipsis } from "@src/components/textEllipsis";
 
 export const DiskMenus = defineComponent({
   setup() {
+    const pathsStore = usePathsStore();
     const store = useDiskStore();
     const checkedMap = computed(() => store.checkedMap);
     const hasChecked = computed(() => Object.values(checkedMap.value).includes(true));
     const hasAuth = computed(() => store.roleType !== "GUEST" && store.roleType !== "MEMBER");
     const currentPath = useCurrentPath();
     const selectedObjects = computed(() => store.objects.filter((object) => !!checkedMap.value[object.path]));
-
+    const breadCrumbPathsStore = useBreadCrumbPathsStore();
+    const onlyDir = ref(false);
     const { runAsync: objectDelete } = useRequest(deleteObject, {
       manual: true,
+    });
+    const { runAsync: getDirStatistics, loading: getDirStatisticsLoading } = useRequest(dirStatistics, {
+      manual: true,
+    });
+
+    const searchDirs = ref<IObjectObjectSearchDataList | null>(null);
+    const { runAsync: searchDir, loading: searchDirLoading } = useRequest(dirSearch, {
+      manual: true,
+      onSuccess(res) {
+        searchDirs.value = { total: res.total, data: res.data?.filter((item) => item.name && item.path) || [] };
+      },
     });
 
     return () => {
@@ -230,7 +264,7 @@ export const DiskMenus = defineComponent({
                               return Promise.all([
                                 new Promise((resolve) => {
                                   if (files.length) {
-                                    objectDelete({ path: currentPath.value, file: files }).finally(() => {
+                                    objectDelete({ path: currentPath.value, file: files }).then((res) => {
                                       resolve("");
                                     });
                                   } else {
@@ -240,7 +274,7 @@ export const DiskMenus = defineComponent({
                                 ...(dirs || []).map(
                                   (dir) =>
                                     new Promise((resolve) => {
-                                      deleteDir({ path: dir }).finally(() => {
+                                      deleteDir({ path: dir }).then(() => {
                                         resolve("");
                                       });
                                     }),
@@ -282,18 +316,219 @@ export const DiskMenus = defineComponent({
                 {<RedoOutlined />}
               </Button>
             </Tooltip>
+
+            <Tooltip title={getDirStatisticsLoading.value ? "统计中" : "统计"}>
+              <Button
+                class={"ml-2"}
+                disabled={getDirStatisticsLoading.value}
+                onClick={() => {
+                  getDirStatistics({ path: currentPath.value }).then((res) => {
+                    Modal.confirm({
+                      title: "文件统计",
+                      closable: true,
+                      icon: null,
+                      content: () => (
+                        <div>
+                          <div class={"flex"}>
+                            <div>文件夹数量：</div>
+                            {res.dirCount}
+                          </div>
+                          <div class={"flex"}>
+                            <div>文件数量：</div>
+                            {res.fileCount}
+                          </div>
+                          <div class={"flex"}>
+                            <div>文件大小：</div>
+                            {getFileSize(res.fileSize)}
+                          </div>
+                        </div>
+                      ),
+                    });
+                  });
+                }}>
+                {<SlidersOutlined />}
+              </Button>
+            </Tooltip>
+
+            {!!store.total && <div class={"ml-2"}>{store.total}条</div>}
           </div>
-          <div class={"w-48"}>
-            <InputSearch
-              defaultValue={store.searchName}
-              onBlur={(e) => {
-                store.setSearchName((e.target as any).value);
-              }}
-              onSearch={(val) => {
-                store.setSearchName(val);
-              }}
-              placeholder={"输入名称后回车筛选"}
-            />
+          <div class={" flex align-items gap-2"}>
+            {store.searchType !== "CURRENT" && (
+              <div class="flex  items-center whitespace-pre">
+                <Checkbox
+                  value={onlyDir.value}
+                  onChange={(e) => {
+                    onlyDir.value = !e.target.value;
+                  }}>
+                  仅文件夹
+                </Checkbox>
+              </div>
+            )}
+            <div class="w-48">
+              <Dropdown
+                visible={store.searchType !== "CURRENT" && !!searchDirs.value?.data?.length}
+                trigger={"click"}
+                v-slots={{
+                  overlay() {
+                    return (
+                      <Menu class={"h-48 overflow-scroll"}>
+                        {searchDirs.value?.data.map((item) => {
+                          return (
+                            <MenuItem
+                              key={item.path}
+                              onClick={() => {
+                                // 搜索中退出
+                                if (store.loading) return;
+
+                                // 拼出来从当前路径到搜索到的目录之间所有路径的完整信息，key 是文件夹名字，value 是 path
+                                const pathMap: { [name: string]: string } = {};
+
+                                let paths = `${item.path}`
+                                  .replace(`${currentPath.value || "/"}`, "")
+                                  .split("/")
+                                  .filter((name) => !!name);
+                                // 最后一个是文件名，删除掉
+                                if (!item.isDir) {
+                                  paths = paths.slice(0, paths.length - 1);
+                                }
+
+                                paths.reduce(
+                                  (parentPath, name) => {
+                                    const currentPath = `${parentPath}/${name}`;
+                                    pathMap[name] = currentPath;
+                                    return currentPath;
+                                  },
+                                  currentPath.value === "/" || !currentPath.value ? "" : currentPath.value,
+                                );
+
+                                breadCrumbPathsStore.setPaths(
+                                  breadCrumbPathsStore.paths.concat(
+                                    paths.map((name) => {
+                                      return {
+                                        name: `/${name}`,
+                                        path: pathMap[name],
+                                      };
+                                    }),
+                                  ),
+                                );
+                                searchDirs.value = null;
+
+                                if (item.isDir) {
+                                  pathsStore.setPaths(store.goToPath(item.path));
+                                } else {
+                                  // 文件进入父级路径，也就是之前整理的路径里最后一个的绝对路径
+                                  const path = pathMap[last(paths)];
+                                  pathsStore.setPaths(store.goToPath(path));
+                                }
+
+                                // 修改搜索数据，文件修改为文件名，文件夹直接情况
+                                if (!item.isDir) {
+                                  // 设置为搜索当前文件，同时跳转到文件所属目录
+                                  store.searchType = "CURRENT";
+                                  store.setSearchName(item.name);
+                                } else {
+                                  store.setSearchName("");
+                                }
+                              }}>
+                              <div class="w-60 mb-2">
+                                <TextEllipsis class="mb-1">{item.name}</TextEllipsis>
+                                <div class="text-xs text-color text-gray-600">
+                                  <div>类型: {item.isDir ? "文件夹" : "文件"}</div>
+
+                                  <div class="whitespace-pre-wrap" title={item.path}>
+                                    <span class={"whitespace-pre"}>路径: </span>
+
+                                    {`${item.path}`.replace(`${currentPath.value || "/"}`, "")}
+                                  </div>
+                                </div>
+                              </div>
+                            </MenuItem>
+                          );
+                        })}
+                        {searchDirs.value?.data.length !== searchDirs.value?.total && (
+                          <MenuItem>
+                            <span class="text-xs text-color text-gray-600">
+                              共{searchDirs.value?.total}条记录，最多显示 100 条
+                            </span>
+                          </MenuItem>
+                        )}
+                      </Menu>
+                    );
+                  },
+                }}>
+                <InputSearch
+                  loading={searchDirLoading.value}
+                  class={"rounded-none"}
+                  // @ts-ignore 禁用 mac 拼写提示
+                  spellcheck="false"
+                  value={store.searchName}
+                  onChange={(e) => {
+                    const value = (e.target as any).value;
+                    store.searchName = value;
+                  }}
+                  onBlur={() => {
+                    // 延迟 300，不然点击文件夹进去的时候会错误（点击的时候已经触发 blur 了）
+                    setTimeout(() => {
+                      searchDirs.value = null;
+                    }, 300);
+                  }}
+                  onInput={debounce((e) => {
+                    const value = (e.target as any).value;
+                    if (store.searchType === "CHILD_DIR") {
+                      if (value) {
+                        searchDir({
+                          onlyDir: onlyDir.value,
+                          path: currentPath.value,
+                          keyword: value,
+                        });
+                      }
+                    } else {
+                      store.setSearchName(value);
+                    }
+                  }, 300)}
+                  prefix={
+                    <Dropdown
+                      trigger={"click"}
+                      v-slots={{
+                        overlay() {
+                          return (
+                            <Menu>
+                              <MenuItem
+                                onClick={() => {
+                                  store.searchType = "CURRENT";
+                                  // 切换的时候触发一下搜索
+                                  store.setSearchName(store.searchName);
+
+                                  // 清空搜索列表
+                                  searchDirs.value = null;
+                                }}>
+                                <span>当前列表搜索</span>
+                              </MenuItem>
+                              <MenuItem
+                                onClick={() => {
+                                  store.searchType = "CHILD_DIR";
+                                  // 切换的时候触发一下搜索
+                                  if (currentPath.value) {
+                                    searchDir({
+                                      onlyDir: onlyDir.value,
+                                      path: currentPath.value,
+                                      keyword: store.searchName,
+                                    });
+                                  }
+                                }}>
+                                <span>子文件列表搜索</span>
+                              </MenuItem>
+                            </Menu>
+                          );
+                        },
+                      }}>
+                      <div class={"pr-2"}>{store.searchType === "CURRENT" ? "当前" : "子级"}</div>
+                    </Dropdown>
+                  }
+                  placeholder={"输入名称后回车筛选"}
+                />
+              </Dropdown>
+            </div>
           </div>
         </div>
       );

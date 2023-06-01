@@ -44,7 +44,11 @@ export const CreateOrgModal = defineComponent({
               label={"组织名称"}
               name={"name"}
               rules={[{ required: true, message: "请输入组织名称", trigger: "blur" }]}>
-              <Input placeholder={"请输入组织名称"} v-model:value={formState.value.name} />
+              <Input // @ts-ignore 禁用 mac 拼写提示
+                spellcheck="false"
+                placeholder={"请输入组织名称"}
+                v-model:value={formState.value.name}
+              />
             </FormItem>
             <FormItem label={"组织描述"} name={"desc"}>
               <Textarea placeholder={"请输入组织描述"} v-model:value={formState.value.desc} />

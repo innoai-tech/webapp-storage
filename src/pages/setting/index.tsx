@@ -35,7 +35,12 @@ export const Setting = defineComponent({
             name={"host"}
             label={"host"}
             rules={[{ required: true, message: "请输入 host", trigger: "change" }]}>
-            <Input placeholder={"请输入请求地址"} v-model:value={formState.value.host} />
+            <Input
+              // @ts-ignore 禁用 mac 拼写提示
+              spellcheck="false"
+              placeholder={"请输入请求地址"}
+              v-model:value={formState.value.host}
+            />
           </FormItem>
           <div class={"flex justify-end"}>
             <Button

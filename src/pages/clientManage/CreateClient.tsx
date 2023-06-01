@@ -1,10 +1,11 @@
-import { createVNode, defineComponent, onMounted, PropType, ref } from "vue";
+import { defineComponent, onMounted, PropType, ref } from "vue";
 import { Button, Form, FormItem, Input, message, Modal, Space, Tooltip } from "ant-design-vue";
 import { useClientsStore } from "@src/pages/clientManage/index";
 import { v4 as uuid } from "uuid";
-import { ExclamationCircleOutlined, MinusCircleOutlined, PlusOutlined } from "@ant-design/icons-vue";
-import { IClient } from "@src/src-clients/storage";
+import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons-vue";
 import { SecretContent } from "@src/pages/clientManage/SecretContent";
+import { createGroupClient, IClientAccountClient, putGroupClient } from "@src/src-clients/storage";
+import { useRequest } from "vue-request";
 interface IFormState {
   clientID: string;
   desc: string;
@@ -14,13 +15,19 @@ interface IFormState {
 
 export const CreateClientModal = defineComponent({
   props: {
+    // 传入是更新和创建组织的
+    groupID: {
+      type: String,
+      required: false,
+    },
     // 有传入就是更新
     client: {
-      type: Object as PropType<IClient>,
+      type: Object as PropType<Omit<IClientAccountClient, "accountID">>,
       required: false,
     },
   },
-  setup(props) {
+  emits: ["close"],
+  setup(props, { emit }) {
     const clientSecret = ref("");
     const clientID = ref("");
     const formState = ref<IFormState>({
@@ -35,11 +42,6 @@ export const CreateClientModal = defineComponent({
     onMounted(() => {
       if (props.client) {
         formState.value.clientID = props.client.clientID;
-        // formState.value.permissions =
-        //   props.client.permissions?.map((permission) => ({
-        //     permission,
-        //     id: uuid(),
-        //   })) || formState.value.permissions;
         formState.value.desc = props.client.desc;
         formState.value.whiteList =
           props.client.whiteList?.map((ip) => ({
@@ -49,9 +51,24 @@ export const CreateClientModal = defineComponent({
       }
     });
 
+    const { runAsync: groupClientCreate } = useRequest(createGroupClient, {
+      manual: true,
+    });
+    const { runAsync: groupClientPut } = useRequest(putGroupClient, {
+      manual: true,
+    });
+
     return () => {
       if (clientID.value && clientSecret.value) {
-        return <SecretContent clientID={clientID.value} secret={clientSecret.value} />;
+        return (
+          <SecretContent
+            clientID={clientID.value}
+            secret={clientSecret.value}
+            onClose={() => {
+              emit("close");
+            }}
+          />
+        );
       }
       return (
         <div>
@@ -61,6 +78,36 @@ export const CreateClientModal = defineComponent({
             onFinish={() => {
               if (!formState.value) return message.warn("请输入 Client ID");
 
+              // 如果是编辑群组
+              if (props.groupID) {
+                if (props.client) {
+                  groupClientPut({
+                    groupID: props.groupID,
+                    clientID: props.client.clientID,
+                    body: {
+                      desc: formState.value.desc,
+                      // permissions: formState.value.permissions.map((item) => item.permission).filter((item) => item),
+                      whiteList: formState.value.whiteList.map((item) => item.ip).filter((item) => item),
+                    },
+                  }).then(() => {
+                    message.success("编辑成功");
+                    emit("close");
+                  });
+                } else {
+                  groupClientCreate({
+                    groupID: props.groupID,
+                    clientID: formState.value.clientID,
+                    body: {
+                      desc: formState.value.desc,
+                      whiteList: formState.value.whiteList.map((item) => item.ip).filter((item) => item),
+                    },
+                  }).then(() => {
+                    message.success("创建成功");
+                    emit("close");
+                  });
+                }
+                return;
+              }
               (props.client
                 ? clientsStore
                     .updateClientRequest({
@@ -74,7 +121,7 @@ export const CreateClientModal = defineComponent({
                     .then(() => {
                       clientsStore.refresh();
                       message.success("编辑成功");
-                      Modal.destroyAll();
+                      emit("close");
                     })
                 : clientsStore
                     .createClientRequest(formState.value.clientID, {
@@ -113,6 +160,8 @@ export const CreateClientModal = defineComponent({
                   },
                 ]}>
                 <Input
+                  // @ts-ignore 禁用 mac 拼写提示
+                  spellcheck="false"
                   disabled={loading.value || !!props.client}
                   placeholder={"请输入Client ID"}
                   v-model:value={formState.value.clientID}
@@ -126,6 +175,8 @@ export const CreateClientModal = defineComponent({
               name={"desc"}
               rules={[{ required: true, message: "请输入描述信息", trigger: "change" }]}>
               <Input.TextArea
+                // @ts-ignore 禁用 mac 拼写提示
+                spellcheck="false"
                 disabled={loading.value}
                 v-model:value={formState.value.desc}
                 placeholder={"请输入描述信息"}></Input.TextArea>
@@ -152,7 +203,13 @@ export const CreateClientModal = defineComponent({
                         trigger: "change",
                       },
                     ]}>
-                    <Input disabled={loading.value} placeholder={"请输入白名单 IP"} v-model:value={item.ip} />
+                    <Input
+                      // @ts-ignore 禁用 mac 拼写提示
+                      spellcheck="false"
+                      disabled={loading.value}
+                      placeholder={"请输入白名单 IP"}
+                      v-model:value={item.ip}
+                    />
                   </FormItem>
                   <Tooltip title={"删除此项"}>
                     <MinusCircleOutlined
@@ -217,7 +274,7 @@ export const CreateClientModal = defineComponent({
               <Button
                 disabled={loading.value}
                 onClick={() => {
-                  Modal.destroyAll();
+                  emit("close");
                 }}>
                 取消
               </Button>

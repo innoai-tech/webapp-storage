@@ -2,9 +2,13 @@ import { computed, createVNode, defineComponent, onMounted, ref } from "vue";
 import { useRequest } from "vue-request";
 import { InputSearch, Modal } from "ant-design-vue";
 import { ApartmentOutlined } from "@ant-design/icons-vue";
-import { createClient, deleteClient, listClient, putClient } from "@src/src-clients/storage";
+import {
+  createAccountClient,
+  deleteAccountClient,
+  listAccountClient,
+  putAccountClient,
+} from "@src/src-clients/storage";
 import { defineStore } from "pinia";
-import { AddAdminModal } from "@src/pages/admin/addAdminModal";
 import { Table } from "@src/components/table";
 import { AuthButton } from "@src/components/authButton";
 import { useColumns } from "@src/pages/clientManage/useColumns";
@@ -16,17 +20,17 @@ export const useClientsStore = defineStore("adminStore", () => {
     data: clients,
     refresh,
     runAsync: getClients,
-  } = useRequest(() => listClient({ size: -1 }), {
+  } = useRequest(() => listAccountClient({ size: -1 }), {
     refreshOnWindowFocus: true,
   });
 
-  const { runAsync: updateClientRequest } = useRequest(putClient, {
+  const { runAsync: updateClientRequest } = useRequest(putAccountClient, {
     manual: true,
   });
-  const { runAsync: createClientRequest } = useRequest(createClient, {
+  const { runAsync: createClientRequest } = useRequest(createAccountClient, {
     manual: true,
   });
-  const { runAsync: deletePutRequest } = useRequest(deleteClient, {
+  const { runAsync: deletePutRequest } = useRequest(deleteAccountClient, {
     manual: true,
   });
 
@@ -44,7 +48,6 @@ export const useClientsStore = defineStore("adminStore", () => {
       {
         desc,
         whiteList,
-        permissions,
       }: {
         desc: string;
         permissions: string[];
@@ -55,7 +58,6 @@ export const useClientsStore = defineStore("adminStore", () => {
         clientID,
         body: {
           desc: desc,
-          permissions,
           whiteList: whiteList,
         },
       });
@@ -107,6 +109,8 @@ export const ClientManage = defineComponent({
               </div>
               <div>
                 <InputSearch
+                  // @ts-ignore 禁用 mac 拼写提示
+                  spellcheck="false"
                   value={clientsStore.searchClientID}
                   onChange={(e) => {
                     clientsStore.setsearchClientID(e.target.value as string);

@@ -100,7 +100,8 @@ export const Index = defineComponent({
                       });
                       loading.value = true;
                       listen("oauth://url", (data) => {
-                        const { code } = parseSearchString(data.payload as string);
+                        const queryString = (data.payload as string).split("?")[1];
+                        const { code } = parseSearchString(queryString);
                         webview.close();
                         appWindow.show();
 

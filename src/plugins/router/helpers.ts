@@ -1,32 +1,18 @@
-export function toSearchString(query: any) {
-  const params = new URLSearchParams();
-  for (const key in query) {
-    if (query.hasOwnProperty(key) && query[key] !== undefined) {
-      params.append(key, query[key]);
-    }
-  }
-  return `?${params.toString()}` || "";
-}
+import { parse, stringify } from "querystring";
 
-export function parseSearchString(url: string) {
-  const obj: Record<string, any> = {};
-  let queryString = url.split("?")[1];
-  if (queryString !== undefined) {
-    queryString = queryString.split("#")[0];
-    const pairs = queryString.split("&");
+export const toSearchString = (query: any = {}) => {
+  const s = stringify(
+    Object.keys(query)
+      .filter((key) => query[key] !== undefined)
+      .reduce((p, c) => ({ ...p, [c]: query[c] }), {}),
+  );
 
-    for (let i = 0; i < pairs.length; i++) {
-      const pair = pairs[i].split("=");
-      const key = decodeURIComponent(pair[0]);
-      const value = decodeURIComponent(pair[1] || "");
-      if (obj[key] === undefined) {
-        obj[key] = value;
-      } else if (Array.isArray(obj[key])) {
-        obj[key].push(value);
-      } else {
-        obj[key] = [obj[key], value];
-      }
-    }
+  return s ? `?${s}` : "";
+};
+
+export function parseSearchString<T extends ReturnType<typeof parse> = any>(search: string): T {
+  if (search.startsWith("?")) {
+    search = search.slice(1);
   }
-  return obj;
+  return parse(search) as any;
 }

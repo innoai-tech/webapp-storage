@@ -7,6 +7,7 @@ import {
   LoadingOutlined,
   LogoutOutlined,
   ReconciliationOutlined,
+  ShareAltOutlined,
   ThunderboltOutlined,
   UserAddOutlined,
   UserOutlined,
@@ -62,6 +63,11 @@ export const Sidenav = defineComponent({
           icon: <ReconciliationOutlined />,
           label: "操作记录",
           key: "taskLog",
+        },
+        {
+          icon: <ShareAltOutlined />,
+          label: "分享管理",
+          key: "share",
         },
         {
           icon: <ApartmentOutlined />,

@@ -11,7 +11,7 @@ export const useCurrentAccountStore = defineStore("currentAccount", () => {
     return !!accountStore.access?.expiresDate && accountStore.access.expiresDate - dayjs().valueOf() > 0;
   });
   // 因为页面强制了有 account 才进入，所以这里强行改一下类型方便其他页面调用
-  const account = ref<IAuthOperatorCurrentUser>(null as any);
+  const account = ref<IAuthOperatorCurrentUser | null>(null);
   useRequest(currentUser, {
     refreshOnWindowFocus: true,
     ready: isValidToken,

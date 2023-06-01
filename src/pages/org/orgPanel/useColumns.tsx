@@ -7,6 +7,7 @@ import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
 import { useGroupsStore } from "@src/pages/org/orgPanel/index";
 import { UpdateOrgModal } from "@src/pages/org/orgPanel/UpdateOrgModal";
 import { AuthButton } from "@src/components/authButton";
+import { OrgClientModal } from "@src/pages/org/orgPanel/orgClientModal";
 
 export const useColumns = () => {
   const groupsStore = useGroupsStore();
@@ -50,7 +51,7 @@ export const useColumns = () => {
       width: 200,
       cellRenderer({ rowData }: { rowData: IGroupGroupWithRole }) {
         return (
-          <div class={"flex"}>
+          <div class={"flex gap-2"}>
             <AuthButton
               type={"link"}
               hasPermission={
@@ -76,13 +77,35 @@ export const useColumns = () => {
               编辑
             </AuthButton>
             <AuthButton
+              type={"link"}
+              hasPermission={
+                // 管理员和拥有者才可以编辑
+                rowData.roleType === "ADMIN" || rowData.roleType === "OWNER"
+              }
+              onClick={() => {
+                Modal.confirm({
+                  title: "凭证管理",
+                  closable: true,
+                  width: "80vw",
+                  appContext: getCurrentInstance()?.appContext,
+                  icon: null,
+                  centered: true,
+                  content: createVNode(<OrgClientModal groupID={rowData.groupID} />),
+                  cancelButtonProps: { style: { display: "none" } } as any,
+                  onOk() {
+                    Modal.destroyAll();
+                  },
+                });
+              }}>
+              凭证管理
+            </AuthButton>
+            <AuthButton
               hasPermission={
                 // 拥有者才可以删除
                 rowData.roleType === "OWNER"
               }
               type={"link"}
               danger
-              class={"ml-2"}
               onClick={() => {
                 Modal.confirm({
                   title: "删除组织",

@@ -59,7 +59,8 @@ export const TaskLog = defineComponent({
 
           <div class={"flex-1 flex flex-col"}>
             <Table rowKey={"operationID"} columns={columns} data={taskLogs.value?.data || []} />
-            <div class={"mt-4 flex justify-end"}>
+            <div class={"mt-4 flex justify-end items-center"}>
+              <span class="mr-2">{taskLogs.value?.total}条</span>
               <Pagination
                 pageSizeOptions={[100, 500, 1000, 2000, 4000]}
                 v-model:pageSize={size.value}

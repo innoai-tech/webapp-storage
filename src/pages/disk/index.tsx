@@ -6,6 +6,7 @@ import { Breadcrumb, BreadcrumbItem, Tooltip } from "ant-design-vue";
 import { Table } from "@src/components/table";
 import { useCurrentAccountStore } from "@src/pages/account";
 import { IconSharedDir } from "@src/pages/disk/Icon";
+import { debounce } from "@querycap/lodash";
 
 export const replacePathName = (path = "") => {
   if (path === "/" || path === "") return "全部文件";
@@ -22,19 +23,21 @@ export const Disk = defineComponent({
     const currentPath = useCurrentPath();
 
     const columns = useColumns();
+
     onMounted(() => {
-      let timer: number | null = null;
+      const timer: number | null = null;
       watch(
         () => currentPath.value,
         () => {
-          store.getFiles();
+          store.clearObjects();
+          store.getFiles(0);
         },
         { immediate: true },
       );
 
-      timer = window.setInterval(() => {
-        store.getFiles();
-      }, 5000);
+      // timer = window.setInterval(() => {
+      //   store.refreshFiles();
+      // }, 5000);
 
       onUnmounted(() => {
         if (timer) window.clearInterval(timer);
@@ -42,19 +45,13 @@ export const Disk = defineComponent({
     });
     const breadCrumbPathsStore = useBreadCrumbPathsStore();
 
-    watch(
-      () => store.objects,
-      () => {
-        console.log(store.objects, "store.objects");
-      },
-    );
     return () => {
       return (
         <div class={"w-full h-full flex flex-col"} ref={domRef}>
           <div class={"flex-shrink-0 mb-2 w-full"}>
             <Breadcrumb class={"mb-2"}>
               {/*兼容性*/}
-              {breadCrumbPathsStore.paths.map(({ path, owner, relativePath }, index) => {
+              {breadCrumbPathsStore.paths.map(({ path, owner, name }, index) => {
                 return (
                   <BreadcrumbItem key={`${path}_${index}`}>
                     <a
@@ -68,6 +65,9 @@ export const Disk = defineComponent({
 
                         const paths = path === "/" ? [] : path.split("/").filter((path) => path);
                         pathsStore.setPaths(paths);
+
+                        // 清空搜索
+                        store.searchName = "";
                       }}>
                       <Tooltip
                         title={
@@ -77,7 +77,7 @@ export const Disk = defineComponent({
                           {owner && owner.accountID !== currentUser.account?.accountID ? (
                             <IconSharedDir class={"align-middle mr-1"} />
                           ) : null}
-                          {replacePathName(relativePath)}
+                          {replacePathName(name)}
                         </span>
                       </Tooltip>
                     </a>
@@ -89,7 +89,27 @@ export const Disk = defineComponent({
 
           <DiskMenus />
 
-          <Table rowKey={"path"} data={store.objects} columns={columns}></Table>
+          <Table
+            sortBy={store.sort as any}
+            onColumnSort={(e) => {
+              store.clearObjects();
+              store.sort = { key: e.key as string, order: e.order as any };
+              store.getFiles(store.offset);
+            }}
+            onEndReached={debounce(
+              () => {
+                if (store.loading) return;
+                if (store.offset + store.size >= store.total) {
+                  return;
+                }
+                store.getFiles((store.offset += store.size));
+              },
+              200,
+              { leading: true },
+            )}
+            rowKey={"path"}
+            data={store.objects}
+            columns={columns}></Table>
         </div>
       );
     };

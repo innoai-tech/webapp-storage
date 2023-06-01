@@ -122,14 +122,14 @@ export const checkObject = createApiInstance<
   };
 });
 
-export const createClient = createApiInstance<
+export const createAccountClient = createApiInstance<
   {
     authorization?: string;
     clientID: string;
     body: IClientClientInfo;
   },
   IRepositoryClientWithSecret
->("storage.CreateClient", ({ authorization: pAuthorization, clientID: pClientID, body: pBody }) => {
+>("storage.CreateAccountClient", ({ authorization: pAuthorization, clientID: pClientID, body: pBody }) => {
   return {
     method: "POST",
     url: `/api/storage/v0/clients/${pClientID}`,
@@ -182,6 +182,31 @@ export const createGroup = createApiInstance<
   };
 });
 
+export const createGroupClient = createApiInstance<
+  {
+    authorization?: string;
+    groupID: IGroupGroupID;
+    clientID: string;
+    body: IClientClientInfo;
+  },
+  IRepositoryClientWithSecret
+>(
+  "storage.CreateGroupClient",
+  ({ authorization: pAuthorization, groupID: pGroupID, clientID: pClientID, body: pBody }) => {
+    return {
+      method: "POST",
+      url: `/api/storage/v0/groups/${pGroupID}/clients/${pClientID}`,
+      data: pBody,
+      query: {
+        authorization: pAuthorization,
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+  },
+);
+
 export const createOperationTask = createApiInstance<
   {
     authorization?: string;
@@ -196,6 +221,22 @@ export const createOperationTask = createApiInstance<
     query: {
       authorization: pAuthorization,
     },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+});
+
+export const createOperationTaskByOpenapi = createApiInstance<
+  {
+    body: IOpenapiOperationCreateOperationTaskByOpenapiBody;
+  },
+  IOpenapiOperationCreateOperationTaskRep
+>("storage.CreateOperationTaskByOpenapi", ({ body: pBody }) => {
+  return {
+    method: "POST",
+    url: `/api/storage/v0/openapi/operations`,
+    data: pBody,
     headers: {
       "Content-Type": "application/json",
     },
@@ -258,6 +299,22 @@ export const currentUserVendorIdentities = createApiInstance<
   };
 });
 
+export const deleteAccountClient = createApiInstance<
+  {
+    authorization?: string;
+    clientID: string;
+  },
+  null
+>("storage.DeleteAccountClient", ({ authorization: pAuthorization, clientID: pClientID }) => {
+  return {
+    method: "DELETE",
+    url: `/api/storage/v0/clients/${pClientID}`,
+    query: {
+      authorization: pAuthorization,
+    },
+  };
+});
+
 export const deleteAdmin = createApiInstance<
   {
     authorization?: string;
@@ -268,22 +325,6 @@ export const deleteAdmin = createApiInstance<
   return {
     method: "DELETE",
     url: `/api/storage/v0/admins/${pAccountID}`,
-    query: {
-      authorization: pAuthorization,
-    },
-  };
-});
-
-export const deleteClient = createApiInstance<
-  {
-    authorization?: string;
-    clientID: string;
-  },
-  null
->("storage.DeleteClient", ({ authorization: pAuthorization, clientID: pClientID }) => {
-  return {
-    method: "DELETE",
-    url: `/api/storage/v0/clients/${pClientID}`,
     query: {
       authorization: pAuthorization,
     },
@@ -319,6 +360,23 @@ export const deleteGroup = createApiInstance<
   return {
     method: "DELETE",
     url: `/api/storage/v0/groups/${pGroupID}`,
+    query: {
+      authorization: pAuthorization,
+    },
+  };
+});
+
+export const deleteGroupClient = createApiInstance<
+  {
+    authorization?: string;
+    groupID: IGroupGroupID;
+    clientID: string;
+  },
+  null
+>("storage.DeleteGroupClient", ({ authorization: pAuthorization, groupID: pGroupID, clientID: pClientID }) => {
+  return {
+    method: "DELETE",
+    url: `/api/storage/v0/groups/${pGroupID}/clients/${pClientID}`,
     query: {
       authorization: pAuthorization,
     },
@@ -414,6 +472,90 @@ export const dirRename = createApiInstance<
     },
     headers: {
       "Content-Type": "application/json",
+    },
+  };
+});
+
+export const dirSearch = createApiInstance<
+  {
+    authorization?: string;
+    path: string;
+    taskCode?: string;
+    keyword: string;
+    onlyDir?: IDatatypesBool;
+    sort?: IUtilsDatatypesSort;
+    size?: number;
+    offset?: number;
+  },
+  IObjectObjectSearchDataList
+>(
+  "storage.DirSearch",
+  ({
+    authorization: pAuthorization,
+    path: pPath,
+    taskCode: pTaskCode,
+    keyword: pKeyword,
+    onlyDir: pOnlyDir,
+    sort: pSort,
+    size: pSize,
+    offset: pOffset,
+  }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/dirs/search`,
+      query: {
+        authorization: pAuthorization,
+        path: pPath,
+        taskCode: pTaskCode,
+        keyword: pKeyword,
+        onlyDir: pOnlyDir,
+        sort: pSort,
+        size: pSize,
+        offset: pOffset,
+      },
+    };
+  },
+);
+
+export const dirShare = createApiInstance<
+  {
+    authorization?: string;
+    path: string;
+    taskCode?: string;
+    body: IObjectDirShareData;
+  },
+  IShareShareToken
+>("storage.DirShare", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
+  return {
+    method: "POST",
+    url: `/api/storage/v0/objects/share`,
+    data: pBody,
+    query: {
+      authorization: pAuthorization,
+      path: pPath,
+      taskCode: pTaskCode,
+    },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+});
+
+export const dirStatistics = createApiInstance<
+  {
+    authorization?: string;
+    path: string;
+    taskCode?: string;
+  },
+  IObjectDirStatisticsInfo
+>("storage.DirStatistics", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode }) => {
+  return {
+    method: "GET",
+    url: `/api/storage/v0/dirs/statistic`,
+    query: {
+      authorization: pAuthorization,
+      path: pPath,
+      taskCode: pTaskCode,
     },
   };
 });
@@ -560,7 +702,7 @@ export const displayAuthToken = (field: keyof IAuthToken) => {
   )[field];
 };
 
-export const displayClient = (field: keyof IClient) => {
+export const displayClientAccountClient = (field: keyof IClientAccountClient) => {
   return (
     displayUtilsDatatypesPrimaryID(field as any) ||
     displayClientClientInfo(field as any) ||
@@ -574,7 +716,7 @@ export const displayClient = (field: keyof IClient) => {
   );
 };
 
-export const displayClientClientDataList = (field: keyof IClientClientDataList) => {
+export const displayClientAccountClientDataList = (field: keyof IClientAccountClientDataList) => {
   return (
     {
       data: "",
@@ -587,8 +729,30 @@ export const displayClientClientInfo = (field: keyof IClientClientInfo) => {
   return (
     {
       desc: "描述",
-      permissions: "目录许可",
       whiteList: "IP 白名单",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayClientGroupClient = (field: keyof IClientGroupClient) => {
+  return (
+    displayUtilsDatatypesPrimaryID(field as any) ||
+    displayClientClientInfo(field as any) ||
+    displayUtilsDatatypesCreationUpdationDeletionTime(field as any) ||
+    (
+      {
+        clientID: "",
+        groupID: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayClientGroupClientDataList = (field: keyof IClientGroupClientDataList) => {
+  return (
+    {
+      data: "",
+      total: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -736,11 +900,30 @@ export const displayObjectDirRenameBody = (field: keyof IObjectDirRenameBody) =>
   )[field];
 };
 
+export const displayObjectDirShareData = (field: keyof IObjectDirShareData) => {
+  return (
+    {
+      expiredAt: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayObjectDirStatisticsInfo = (field: keyof IObjectDirStatisticsInfo) => {
+  return (
+    {
+      dirCount: "",
+      fileCount: "",
+      fileSize: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
 export const displayObjectObjectDataList = (field: keyof IObjectObjectDataList) => {
   return (
     {
       data: "",
       roleType: "",
+      total: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -748,13 +931,23 @@ export const displayObjectObjectDataList = (field: keyof IObjectObjectDataList) 
 export const displayObjectObjectInfo = (field: keyof IObjectObjectInfo) => {
   return (
     {
-      SHA256: "",
       "content-type": "",
+      createdAt: "",
       isDir: "",
       name: "",
       path: "",
+      sha256: "",
       size: "",
       updatedAt: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayObjectObjectSearchDataList = (field: keyof IObjectObjectSearchDataList) => {
+  return (
+    {
+      data: "",
+      total: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -777,10 +970,28 @@ export const displayObjectObjectsCopyParam = (field: keyof IObjectObjectsCopyPar
   )[field];
 };
 
-export const displayOpenapiObjectDataList = (field: keyof IOpenapiObjectDataList) => {
+export const displayOpenapiObjectObjectDataList = (field: keyof IOpenapiObjectObjectDataList) => {
   return (
     {
       data: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayOpenapiOperationCreateOperationTaskByOpenapiBody = (
+  field: keyof IOpenapiOperationCreateOperationTaskByOpenapiBody,
+) => {
+  return (
+    {
+      desc: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayOpenapiOperationCreateOperationTaskRep = (field: keyof IOpenapiOperationCreateOperationTaskRep) => {
+  return (
+    {
+      taskCode: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -791,9 +1002,11 @@ export const displayOperation = (field: keyof IOperation) => {
     displayUtilsDatatypesCreationTime(field as any) ||
     (
       {
-        account_ID: "操作者",
+        IP: "",
         desc: "描述",
         operationID: "操作ID",
+        operatorID: "操作者 ID",
+        operatorType: "操作者类型",
         taskCode: "任务码",
       } as { [key: string]: string }
     )[field]
@@ -840,6 +1053,7 @@ export const displayOperationOperationLog = (field: keyof IOperationOperationLog
     displayUtilsDatatypesCreationUpdationTime(field as any) ||
     (
       {
+        IP: "IP",
         desc: "操作描述",
         logID: "",
         operationID: "操作ID",
@@ -881,6 +1095,13 @@ export const displayOperationOperationWithOperatorName = (field: keyof IOperatio
       } as { [key: string]: string }
     )[field]
   );
+};
+
+export const displayOperationOperatorType = (type: "ACCOUNT" | "GROUP") => {
+  return {
+    ACCOUNT: "用户",
+    GROUP: "组织",
+  }[type];
 };
 
 export const displayRbacAccount = (field: keyof IRbacAccount) => {
@@ -1012,6 +1233,96 @@ export const displayServerControllerObjectCtlObject = (field: keyof IServerContr
   );
 };
 
+export const displayShare = (field: keyof IShare) => {
+  return (
+    displayUtilsDatatypesPrimaryID(field as any) ||
+    displayShareShareBase(field as any) ||
+    displayUtilsDatatypesCreationUpdationDeletionTime(field as any) ||
+    (
+      {
+        accountID: "",
+        shareID: "组织 ID",
+        state: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayShareLogPutShareStateBody = (field: keyof IShareLogPutShareStateBody) => {
+  return (
+    {
+      State: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayShareObjectObjectDataList = (field: keyof IShareObjectObjectDataList) => {
+  return (
+    {
+      data: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displaySharePower = (type: "READ" | "UPLOAD" | "DELETE") => {
+  return {
+    READ: "文件读取",
+    UPLOAD: "文件上传",
+    DELETE: "文件删除",
+  }[type];
+};
+
+export const displayShareShareBase = (field: keyof IShareShareBase) => {
+  return (
+    {
+      expiredAt: "",
+      path: "",
+      powers: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayShareShareDataList = (field: keyof IShareShareDataList) => {
+  return (
+    {
+      data: "",
+      total: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayShareShareToken = (field: keyof IShareShareToken) => {
+  return (
+    {
+      expiresIn: "",
+      shareToken: "",
+      type: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayShareShareWithUser = (field: keyof IShareShareWithUser) => {
+  return (
+    displayShare(field as any) ||
+    (
+      {
+        user: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayShareState = (type: "ENABLE" | "DISABLE") => {
+  return {
+    ENABLE: "启用",
+    DISABLE: "禁用",
+  }[type];
+};
+
+export const displayShareUser = (field: any) => {
+  return displayAccount(field as any) || ({} as { [key: string]: string })[field];
+};
+
 export const displayUtilsDatatypesCreationTime = (field: keyof IUtilsDatatypesCreationTime) => {
   return (
     {
@@ -1097,6 +1408,25 @@ export const getObject = createApiInstance<
   },
 );
 
+export const getShareObject = createApiInstance<
+  {
+    authorization?: string;
+    path: string;
+    imageProcess?: IImageProcessProcessCondition;
+  },
+  null
+>("storage.GetShareObject", ({ authorization: pAuthorization, path: pPath, imageProcess: pImageProcess }) => {
+  return {
+    method: "GET",
+    url: `/api/storage/v0/shares/objects/get`,
+    query: {
+      authorization: pAuthorization,
+      path: pPath,
+      imageProcess: pImageProcess,
+    },
+  };
+});
+
 export const listAccount = createApiInstance<
   {
     authorization?: string;
@@ -1128,6 +1458,30 @@ export const listAccount = createApiInstance<
         uniqueCode: pUniqueCode,
         identity: pIdentity,
         name: pName,
+        size: pSize,
+        offset: pOffset,
+      },
+    };
+  },
+);
+
+export const listAccountClient = createApiInstance<
+  {
+    authorization?: string;
+    clientID?: string | string[];
+    size?: number;
+    offset?: number;
+  },
+  IClientAccountClientDataList
+>(
+  "storage.ListAccountClient",
+  ({ authorization: pAuthorization, clientID: pClientID, size: pSize, offset: pOffset }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/clients`,
+      query: {
+        authorization: pAuthorization,
+        clientID: pClientID,
         size: pSize,
         offset: pOffset,
       },
@@ -1177,27 +1531,6 @@ export const listAuthProvider = createApiInstance<void, IAuthProviderList>("stor
   return {
     method: "GET",
     url: `/api/storage/v0/auth-providers`,
-  };
-});
-
-export const listClient = createApiInstance<
-  {
-    authorization?: string;
-    clientID?: string | string[];
-    size?: number;
-    offset?: number;
-  },
-  IClientClientDataList
->("storage.ListClient", ({ authorization: pAuthorization, clientID: pClientID, size: pSize, offset: pOffset }) => {
-  return {
-    method: "GET",
-    url: `/api/storage/v0/clients`,
-    query: {
-      authorization: pAuthorization,
-      clientID: pClientID,
-      size: pSize,
-      offset: pOffset,
-    },
   };
 });
 
@@ -1352,32 +1685,80 @@ export const listGroupAccount = createApiInstance<
   },
 );
 
+export const listGroupClient = createApiInstance<
+  {
+    authorization?: string;
+    groupID: IGroupGroupID;
+    clientID?: string | string[];
+    size?: number;
+    offset?: number;
+  },
+  IClientGroupClientDataList
+>(
+  "storage.ListGroupClient",
+  ({ authorization: pAuthorization, groupID: pGroupID, clientID: pClientID, size: pSize, offset: pOffset }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/groups/${pGroupID}/clients`,
+      query: {
+        authorization: pAuthorization,
+        clientID: pClientID,
+        size: pSize,
+        offset: pOffset,
+      },
+    };
+  },
+);
+
 export const listObjects = createApiInstance<
   {
     authorization?: string;
     path: string;
     taskCode?: string;
+    keyword?: string;
+    sort?: IUtilsDatatypesSort;
+    size?: number;
+    offset?: number;
   },
   IObjectObjectDataList
->("storage.ListObjects", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode }) => {
-  return {
-    method: "GET",
-    url: `/api/storage/v0/objects/list`,
-    query: {
-      authorization: pAuthorization,
-      path: pPath,
-      taskCode: pTaskCode,
-    },
-  };
-});
+>(
+  "storage.ListObjects",
+  ({
+    authorization: pAuthorization,
+    path: pPath,
+    taskCode: pTaskCode,
+    keyword: pKeyword,
+    sort: pSort,
+    size: pSize,
+    offset: pOffset,
+  }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/objects/list`,
+      query: {
+        authorization: pAuthorization,
+        path: pPath,
+        taskCode: pTaskCode,
+        keyword: pKeyword,
+        sort: pSort,
+        size: pSize,
+        offset: pOffset,
+      },
+    };
+  },
+);
 
 export const listOperation = createApiInstance<
   {
     authorization?: string;
     operationID?: IOperationOperationID | IOperationOperationID[];
-    accountID?: IAccountAccountID | IAccountAccountID[];
+    operatorID?: IDatatypesSfid | IDatatypesSfid[];
+    operatorType?: IOperationOperatorType | IOperationOperatorType[];
     size?: number;
     offset?: number;
+    sort?: IUtilsDatatypesSort;
+    createdAt?: IUtilsDatatypesDateTimeOrRange;
+    accountID?: IAccountAccountID | IAccountAccountID[];
   },
   IOperationOperationDataList
 >(
@@ -1385,9 +1766,13 @@ export const listOperation = createApiInstance<
   ({
     authorization: pAuthorization,
     operationID: pOperationID,
-    accountID: pAccountID,
+    operatorID: pOperatorID,
+    operatorType: pOperatorType,
     size: pSize,
     offset: pOffset,
+    sort: pSort,
+    createdAt: pCreatedAt,
+    accountID: pAccountID,
   }) => {
     return {
       method: "GET",
@@ -1395,9 +1780,13 @@ export const listOperation = createApiInstance<
       query: {
         authorization: pAuthorization,
         operationID: pOperationID,
-        accountID: pAccountID,
+        operatorID: pOperatorID,
+        operatorType: pOperatorType,
         size: pSize,
         offset: pOffset,
+        sort: pSort,
+        createdAt: pCreatedAt,
+        accountID: pAccountID,
       },
     };
   },
@@ -1412,6 +1801,8 @@ export const listOperationLog = createApiInstance<
     state?: IOperationOperationState | IOperationOperationState[];
     size?: number;
     offset?: number;
+    sort?: IUtilsDatatypesSort;
+    createdAt?: IUtilsDatatypesDateTimeOrRange;
   },
   IOperationOperationLogDataList
 >(
@@ -1424,6 +1815,8 @@ export const listOperationLog = createApiInstance<
     state: pState,
     size: pSize,
     offset: pOffset,
+    sort: pSort,
+    createdAt: pCreatedAt,
   }) => {
     return {
       method: "GET",
@@ -1435,6 +1828,78 @@ export const listOperationLog = createApiInstance<
         state: pState,
         size: pSize,
         offset: pOffset,
+        sort: pSort,
+        createdAt: pCreatedAt,
+      },
+    };
+  },
+);
+
+export const listShare = createApiInstance<
+  {
+    authorization?: string;
+    accountID?: IAccountAccountID | IAccountAccountID[];
+    shareID?: IShareShareID | IShareShareID[];
+    dir?: string | string[];
+    state?: IShareState | IShareState[];
+    expiredAt?: IUtilsDatatypesDateTimeOrRange;
+    sort?: IUtilsDatatypesSort;
+    size?: number;
+    offset?: number;
+  },
+  IShareShareDataList
+>(
+  "storage.ListShare",
+  ({
+    authorization: pAuthorization,
+    accountID: pAccountID,
+    shareID: pShareID,
+    dir: pDir,
+    state: pState,
+    expiredAt: pExpiredAt,
+    sort: pSort,
+    size: pSize,
+    offset: pOffset,
+  }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/share-logs`,
+      query: {
+        authorization: pAuthorization,
+        accountID: pAccountID,
+        shareID: pShareID,
+        dir: pDir,
+        state: pState,
+        expiredAt: pExpiredAt,
+        sort: pSort,
+        size: pSize,
+        offset: pOffset,
+      },
+    };
+  },
+);
+
+export const listShareObjects = createApiInstance<
+  {
+    authorization?: string;
+    dir?: string;
+    keyword?: string;
+    onlyDir?: IDatatypesBool;
+    sort?: IUtilsDatatypesSort;
+  },
+  IShareObjectObjectDataList
+>(
+  "storage.ListShareObjects",
+  ({ authorization: pAuthorization, dir: pDir, keyword: pKeyword, onlyDir: pOnlyDir, sort: pSort }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/shares/objects`,
+      query: {
+        authorization: pAuthorization,
+        dir: pDir,
+        keyword: pKeyword,
+        onlyDir: pOnlyDir,
+        sort: pSort,
       },
     };
   },
@@ -1463,27 +1928,41 @@ export const objectRename = createApiInstance<
 
 export const objectUpload = createApiInstance<
   {
+    authorization?: string;
+    path: string;
+    taskCode?: string;
     "content-type": string;
     SHA256: string;
-    Path: string;
     body: any;
   },
   null
->("storage.ObjectUpload", ({ "content-type": pContentType, SHA256: pSha256, Path: pPath, body: pBody }) => {
-  return {
-    method: "POST",
-    url: `/api/storage/v0/openapi/objects/upload`,
-    data: pBody,
-    query: {
-      "content-type": pContentType,
-      SHA256: pSha256,
-      Path: pPath,
-    },
-    headers: {
-      "Content-Type": "application/octet-stream",
-    },
-  };
-});
+>(
+  "storage.ObjectUpload",
+  ({
+    authorization: pAuthorization,
+    path: pPath,
+    taskCode: pTaskCode,
+    "content-type": pContentType,
+    SHA256: pSha256,
+    body: pBody,
+  }) => {
+    return {
+      method: "POST",
+      url: `/api/storage/v0/objects/upload`,
+      data: pBody,
+      query: {
+        authorization: pAuthorization,
+        path: pPath,
+        taskCode: pTaskCode,
+        "content-type": pContentType,
+        SHA256: pSha256,
+      },
+      headers: {
+        "Content-Type": "application/octet-stream",
+      },
+    };
+  },
+);
 
 export const objectsCopy = createApiInstance<
   {
@@ -1540,38 +2019,95 @@ export const openAPI = createApiInstance<void, null>("storage.OpenAPI", () => {
   };
 });
 
-export const openapiGetObject = createApiInstance<
+export const openapiListObjects = createApiInstance<
   {
-    path: string;
-    "image-process"?: IImageProcessProcessCondition;
+    taskCode?: string;
+    dir: string;
+    onlyDir?: IDatatypesBool;
+    uniqueCode?: string;
+    keyword?: string;
+    sort?: IUtilsDatatypesSort;
+  },
+  IOpenapiObjectObjectDataList
+>(
+  "storage.OpenapiListObjects",
+  ({ taskCode: pTaskCode, dir: pDir, onlyDir: pOnlyDir, uniqueCode: pUniqueCode, keyword: pKeyword, sort: pSort }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/openapi/objects`,
+      query: {
+        taskCode: pTaskCode,
+        dir: pDir,
+        onlyDir: pOnlyDir,
+        uniqueCode: pUniqueCode,
+        keyword: pKeyword,
+        sort: pSort,
+      },
+    };
+  },
+);
+
+export const openapiObjectCheck = createApiInstance<
+  {
+    taskCode?: string;
+    sha256: string;
   },
   null
->("storage.OpenapiGetObject", ({ path: pPath, "image-process": pImageProcess }) => {
+>("storage.OpenapiObjectCheck", ({ taskCode: pTaskCode, sha256: pSha256 }) => {
   return {
     method: "GET",
-    url: `/api/storage/v0/openapi/objects/get`,
+    url: `/api/storage/v0/openapi/objects/check`,
     query: {
-      path: pPath,
-      "image-process": pImageProcess,
+      taskCode: pTaskCode,
+      sha256: pSha256,
     },
   };
 });
 
-export const openapiListObjects = createApiInstance<
+export const openapiObjectUpload = createApiInstance<
   {
-    dir: string;
-    onlyDir?: IDatatypesBool;
-    uniqueCode?: string;
+    taskCode?: string;
+    "content-type": string;
+    SHA256: string;
+    Path: string;
+    body: any;
   },
-  IOpenapiObjectDataList
->("storage.OpenapiListObjects", ({ dir: pDir, onlyDir: pOnlyDir, uniqueCode: pUniqueCode }) => {
+  null
+>(
+  "storage.OpenapiObjectUpload",
+  ({ taskCode: pTaskCode, "content-type": pContentType, SHA256: pSha256, Path: pPath, body: pBody }) => {
+    return {
+      method: "POST",
+      url: `/api/storage/v0/openapi/objects`,
+      data: pBody,
+      query: {
+        taskCode: pTaskCode,
+        "content-type": pContentType,
+        SHA256: pSha256,
+        Path: pPath,
+      },
+      headers: {
+        "Content-Type": "application/octet-stream",
+      },
+    };
+  },
+);
+
+export const openapiOpenapiGetObject = createApiInstance<
+  {
+    taskCode?: string;
+    path: string;
+    imageProcess?: IImageProcessProcessCondition;
+  },
+  null
+>("storage.OpenapiOpenapiGetObject", ({ taskCode: pTaskCode, path: pPath, imageProcess: pImageProcess }) => {
   return {
     method: "GET",
-    url: `/api/storage/v0/openapi/objects/list`,
+    url: `/api/storage/v0/openapi/objects/get`,
     query: {
-      dir: pDir,
-      onlyDir: pOnlyDir,
-      uniqueCode: pUniqueCode,
+      taskCode: pTaskCode,
+      path: pPath,
+      imageProcess: pImageProcess,
     },
   };
 });
@@ -1587,6 +2123,27 @@ export const operationUndo = createApiInstance<
   return {
     method: "PUT",
     url: `/api/storage/v0/operations/${pOperationID}/undo`,
+    data: pBody,
+    query: {
+      authorization: pAuthorization,
+    },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+});
+
+export const putAccountClient = createApiInstance<
+  {
+    authorization?: string;
+    clientID: string;
+    body: IClientClientInfo;
+  },
+  null
+>("storage.PutAccountClient", ({ authorization: pAuthorization, clientID: pClientID, body: pBody }) => {
+  return {
+    method: "PUT",
+    url: `/api/storage/v0/clients/${pClientID}`,
     data: pBody,
     query: {
       authorization: pAuthorization,
@@ -1634,17 +2191,42 @@ export const putAdmin = createApiInstance<
   };
 });
 
-export const putClient = createApiInstance<
+export const putGroupClient = createApiInstance<
   {
     authorization?: string;
+    groupID: IGroupGroupID;
     clientID: string;
     body: IClientClientInfo;
   },
   null
->("storage.PutClient", ({ authorization: pAuthorization, clientID: pClientID, body: pBody }) => {
+>(
+  "storage.PutGroupClient",
+  ({ authorization: pAuthorization, groupID: pGroupID, clientID: pClientID, body: pBody }) => {
+    return {
+      method: "PUT",
+      url: `/api/storage/v0/groups/${pGroupID}/clients/${pClientID}`,
+      data: pBody,
+      query: {
+        authorization: pAuthorization,
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+  },
+);
+
+export const putShareState = createApiInstance<
+  {
+    authorization?: string;
+    shareID: IShareShareID;
+    body: IShareLogPutShareStateBody;
+  },
+  null
+>("storage.PutShareState", ({ authorization: pAuthorization, shareID: pShareID, body: pBody }) => {
   return {
     method: "PUT",
-    url: `/api/storage/v0/clients/${pClientID}`,
+    url: `/api/storage/v0/share-logs/${pShareID}/state`,
     data: pBody,
     query: {
       authorization: pAuthorization,
@@ -1655,16 +2237,33 @@ export const putClient = createApiInstance<
   };
 });
 
-export const refreshClientSecret = createApiInstance<
+export const refreshAccountClientSecret = createApiInstance<
   {
     authorization?: string;
     clientID: string;
   },
   IRepositoryClientWithSecret
->("storage.RefreshClientSecret", ({ authorization: pAuthorization, clientID: pClientID }) => {
+>("storage.RefreshAccountClientSecret", ({ authorization: pAuthorization, clientID: pClientID }) => {
   return {
     method: "PUT",
     url: `/api/storage/v0/clients/${pClientID}/refresh-secret`,
+    query: {
+      authorization: pAuthorization,
+    },
+  };
+});
+
+export const refreshGroupClientSecret = createApiInstance<
+  {
+    authorization?: string;
+    groupID: IGroupGroupID;
+    clientID: string;
+  },
+  IRepositoryClientWithSecret
+>("storage.RefreshGroupClientSecret", ({ authorization: pAuthorization, groupID: pGroupID, clientID: pClientID }) => {
+  return {
+    method: "PUT",
+    url: `/api/storage/v0/groups/${pGroupID}/clients/${pClientID}/refresh-secret`,
     query: {
       authorization: pAuthorization,
     },
@@ -1791,11 +2390,27 @@ export enum OperationOperationType {
   OBJECT = "OBJECT",
 }
 
+export enum OperationOperatorType {
+  ACCOUNT = "ACCOUNT",
+  GROUP = "GROUP",
+}
+
 export enum RbacRoleType {
   OWNER = "OWNER",
   ADMIN = "ADMIN",
   MEMBER = "MEMBER",
   GUEST = "GUEST",
+}
+
+export enum SharePower {
+  READ = "READ",
+  UPLOAD = "UPLOAD",
+  DELETE = "DELETE",
+}
+
+export enum ShareState {
+  ENABLE = "ENABLE",
+  DISABLE = "DISABLE",
 }
 
 export interface IAccount extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationUpdationDeletionTime {
@@ -1867,7 +2482,7 @@ export interface IAuthToken {
   type: string;
 }
 
-export interface IClient
+export interface IClientAccountClient
   extends IUtilsDatatypesPrimaryID,
     IClientClientInfo,
     IUtilsDatatypesCreationUpdationDeletionTime {
@@ -1875,15 +2490,27 @@ export interface IClient
   clientID: string;
 }
 
-export interface IClientClientDataList {
-  data: IClient[];
+export interface IClientAccountClientDataList {
+  data: IClientAccountClient[];
   total: number;
 }
 
 export interface IClientClientInfo {
   desc: string;
-  permissions?: IClientPermissions;
   whiteList?: IClientWhiteList;
+}
+
+export interface IClientGroupClient
+  extends IUtilsDatatypesPrimaryID,
+    IClientClientInfo,
+    IUtilsDatatypesCreationUpdationDeletionTime {
+  clientID: string;
+  groupID: IGroupGroupID;
+}
+
+export interface IClientGroupClientDataList {
+  data: IClientGroupClient[];
+  total: number;
 }
 
 export interface IGroup extends IUtilsDatatypesPrimaryID, IGroupGroupBase, IUtilsDatatypesCreationUpdationDeletionTime {
@@ -1949,19 +2576,36 @@ export interface IObjectDirRenameBody {
   newPath: string;
 }
 
+export interface IObjectDirShareData {
+  expiredAt: IDatatypesTimestamp;
+}
+
+export interface IObjectDirStatisticsInfo {
+  dirCount: number;
+  fileCount: number;
+  fileSize: number;
+}
+
 export interface IObjectObjectDataList {
   data: IServerControllerObjectCtlObject[];
   roleType?: IRbacRoleType;
+  total: number;
 }
 
 export interface IObjectObjectInfo {
-  SHA256: string;
   "content-type": string;
+  createdAt: number;
   isDir: IDatatypesBool;
   name: string;
   path: string;
+  sha256: string;
   size: number;
   updatedAt: number;
+}
+
+export interface IObjectObjectSearchDataList {
+  data: IObjectObjectInfo[];
+  total: number;
 }
 
 export interface IObjectObjectsCopyBody {
@@ -1974,14 +2618,24 @@ export interface IObjectObjectsCopyParam {
   targetPath: string;
 }
 
-export interface IOpenapiObjectDataList {
+export interface IOpenapiObjectObjectDataList {
   data: IServerControllerObjectCtlObject[];
 }
 
+export interface IOpenapiOperationCreateOperationTaskByOpenapiBody {
+  desc: string;
+}
+
+export interface IOpenapiOperationCreateOperationTaskRep {
+  taskCode: string;
+}
+
 export interface IOperation extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationTime {
-  account_ID: IAccountAccountID;
+  IP: string;
   desc: string;
   operationID: IOperationOperationID;
+  operatorID: IDatatypesSfid;
+  operatorType: IOperationOperatorType;
   taskCode: string;
 }
 
@@ -2004,6 +2658,7 @@ export interface IOperationOperationDataList {
 }
 
 export interface IOperationOperationLog extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationUpdationTime {
+  IP: string;
   desc: IOperationText;
   logID: IOperationOperationLogID;
   operationID: IOperationOperationID;
@@ -2073,6 +2728,43 @@ export interface IServerControllerObjectCtlObject extends IObjectObjectInfo {
   owner?: IServerControllerObjectCtlDirOwner;
 }
 
+export interface IShare extends IUtilsDatatypesPrimaryID, IShareShareBase, IUtilsDatatypesCreationUpdationDeletionTime {
+  accountID: IAccountAccountID;
+  shareID: IShareShareID;
+  state: IShareState;
+}
+
+export interface IShareLogPutShareStateBody {
+  State: IShareState;
+}
+
+export interface IShareObjectObjectDataList {
+  data: IObjectObjectInfo[];
+}
+
+export interface IShareShareBase {
+  expiredAt: IDatatypesTimestamp;
+  path: string;
+  powers: ISharePowers;
+}
+
+export interface IShareShareDataList {
+  data: IShareShareWithUser[];
+  total: number;
+}
+
+export interface IShareShareToken {
+  expiresIn: number;
+  shareToken: string;
+  type: string;
+}
+
+export interface IShareShareWithUser extends IShare {
+  user: IShareUser;
+}
+
+export interface IShareUser extends IAccount {}
+
 export interface IUtilsDatatypesCreationTime {
   createdAt: IDatatypesTimestamp;
 }
@@ -2093,11 +2785,11 @@ export type IAuthOperatorCurrentUser = IAccountUser & {
   isAdmin: boolean;
 } & any;
 
-export type IClientPermissions = string[];
-
 export type IClientWhiteList = string[];
 
 export type IDatatypesBool = boolean;
+
+export type IDatatypesSfid = string;
 
 export type IDatatypesTimestamp = string;
 
@@ -2117,6 +2809,20 @@ export type IOperationOperationState = keyof typeof OperationOperationState;
 
 export type IOperationOperationType = keyof typeof OperationOperationType;
 
+export type IOperationOperatorType = keyof typeof OperationOperatorType;
+
 export type IOperationText = string;
 
 export type IRbacRoleType = keyof typeof RbacRoleType;
+
+export type ISharePower = keyof typeof SharePower;
+
+export type ISharePowers = ISharePower[];
+
+export type IShareShareID = string;
+
+export type IShareState = keyof typeof ShareState;
+
+export type IUtilsDatatypesDateTimeOrRange = string;
+
+export type IUtilsDatatypesSort = string;

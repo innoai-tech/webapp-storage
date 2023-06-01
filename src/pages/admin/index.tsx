@@ -90,6 +90,8 @@ export const Admin = defineComponent({
               </div>
               <div>
                 <InputSearch
+                  // @ts-ignore 禁用 mac 拼写提示
+                  spellcheck="false"
                   value={adminStore.searchUsername}
                   onChange={(e) => {
                     adminStore.setSearchUsername(e.target.value as string);

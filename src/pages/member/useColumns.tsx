@@ -18,13 +18,13 @@ export const useColumns = () => {
       title: "成员名称",
       key: "name",
       dataKey: "name",
-      width: 200,
+      width: 300,
     },
     {
       title: "创建时间",
       key: "createdAt",
       dataKey: "createdAt",
-      width: 200,
+      width: 300,
       cellRenderer({ rowData }: { rowData: IAccountUser }) {
         return <span>{toFullTime(rowData.createdAt) || "-"}</span>;
       },
@@ -34,7 +34,7 @@ export const useColumns = () => {
       title: "操作",
       key: "accountID",
       dataKey: "accountID",
-      width: 200,
+      width: 300,
       cellRenderer({ rowData }: { rowData: IAccountUser }) {
         const state = rowData.state === "ENABLE";
         return (

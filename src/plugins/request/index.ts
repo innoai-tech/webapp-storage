@@ -76,7 +76,7 @@ export function createApiInstance<TReq, TResBody>(name: string, requestOptsFromR
       };
 
       // @ts-ignore
-      if ((import.meta as any).env.DEV && !window.__TAURI_IPC__) {
+      if ((import.meta as any).env.DEV || !window.__TAURI_IPC__) {
         return axiosRequester
           .request<TResBody>(options)
           .then((res) => {

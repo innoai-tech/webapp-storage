@@ -1,9 +1,10 @@
 import { defineStore } from "pinia";
 import { computed, onUnmounted, ref, watch } from "vue";
-import { IObject, IObjectDirOwner, IRbacRoleType, listObjects, RbacRoleType } from "@src/src-clients/storage";
+import { IServerControllerObjectCtlObject, IRbacRoleType, listObjects, RbacRoleType } from "@src/src-clients/storage";
 import { useRequest } from "vue-request";
 import { isEqual } from "lodash-es";
 import { useCurrentAccountStore } from "@src/pages/account";
+import { debounce } from "@querycap/lodash";
 
 export const usePathsStore = defineStore("paths", () => {
   const paths = ref<string[]>([]);
@@ -22,15 +23,15 @@ export const useCurrentPath = () => {
 
 interface IBreadCrumbPath {
   path: string;
-  relativePath: string;
-  owner?: IObjectDirOwner;
+  name: string;
+  owner?: { accountID: string; name: string };
 }
 
 /*
- * 因为权限设计原因，面包屑展示的 path 不一定是真实 path，relativePath是用来展示的，path是实际请求的，点击面包屑后同步到usePathsStore里
+ * 因为权限设计原因，面包屑展示的 path 不一定是真实 path，nane是用来展示的，path是实际请求的，点击面包屑后同步到usePathsStore里
  * */
 export const useBreadCrumbPathsStore = defineStore("BreadCrumbPaths", () => {
-  const paths = ref<IBreadCrumbPath[]>([{ path: "/", relativePath: "/" }]);
+  const paths = ref<IBreadCrumbPath[]>([{ path: "/", name: "/" }]);
 
   return {
     paths,
@@ -72,33 +73,37 @@ export function joinPath(path: string, subPath?: string) {
 }
 
 export const useDiskStore = defineStore("disk", () => {
+  const size = ref(500);
+  const offset = ref(0);
+  const total = ref(0);
   const searchName = ref<string>("");
+  const searchType = ref<"CURRENT" | "CHILD_DIR">("CURRENT");
   const roleType = ref<IRbacRoleType | undefined>();
   const renamedFile = ref<string>("");
   const currentPath = useCurrentPath();
-  const objects = ref<IObject[]>([]);
+  const objects = ref<IServerControllerObjectCtlObject[]>([]);
   const checkedMap = ref<Record<string, boolean>>({});
+  const sort = ref<{ key: string; order: "asc" | "desc" }>({
+    key: "createdAt",
+    order: "asc",
+  });
 
-  // 过滤掉搜索项
-  const objectsFilter = computed(
-    () =>
-      objects.value?.filter(
-        (item) =>
-          item.name?.toLowerCase().includes(searchName.value?.toLowerCase()) ||
-          searchName.value?.toLowerCase().includes(item.name?.toLowerCase()),
-      ) || [],
-  );
   onUnmounted(() => {
     renamedFile.value = "";
   });
 
-  const { runAsync: getObjects, loading } = useRequest(listObjects, {
+  const {
+    runAsync: getObjects,
+    refresh,
+    loading,
+  } = useRequest(listObjects, {
     manual: true,
     debounceInterval: 100,
     onSuccess(res) {
       if (!isEqual(objects.value, res.data)) {
-        objects.value = res.data || [];
+        objects.value = objects.value.concat(res.data || []);
       }
+      total.value = res.total || 0;
 
       roleType.value = res.roleType || RbacRoleType.GUEST;
     },
@@ -112,9 +117,16 @@ export const useDiskStore = defineStore("disk", () => {
     },
   );
 
-  function getFile() {
-    return getObjects({ path: currentPath.value });
-  }
+  const getFile = debounce((newOffset: number) => {
+    offset.value = newOffset;
+    return getObjects({
+      path: currentPath.value,
+      size: size.value,
+      keyword: searchName.value,
+      sort: `${sort.value.key}!${sort.value.order}`,
+      offset: offset.value,
+    });
+  }, 200);
 
   function goToPath(path: string) {
     // 把根目录的 "" 替换为 "/"
@@ -128,18 +140,34 @@ export const useDiskStore = defineStore("disk", () => {
   }
 
   return {
+    offset,
     searchName,
-    setSearchName(newName: string) {
+    setSearchName: (newName: string) => {
       searchName.value = newName;
+      objects.value = [];
+      offset.value = 0;
+      getFile(0);
     },
+
     setCheckedMap,
     goToPath,
     loading,
+    sort,
+    total,
     checkedMap,
     roleType,
+    size,
+    searchType,
     renamedFile,
     getFiles: getFile,
-    refreshFiles: getFile,
-    objects: objectsFilter,
+    refreshFiles: () =>
+      new Promise((resolve) => {
+        refresh();
+        resolve("");
+      }),
+    clearObjects() {
+      objects.value = [];
+    },
+    objects: objects,
   };
 });

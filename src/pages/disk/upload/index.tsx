@@ -14,9 +14,9 @@ import dayjs from "dayjs";
 import { useSettingStore } from "@src/pages/setting";
 import { useRequest } from "vue-request";
 import { createDir, createOperationTask } from "@src/src-clients/storage";
-
+import { type } from "@tauri-apps/api/os";
 export const replaceFileName = (name: string): string => {
-  return name?.replaceAll(":", "：").replaceAll("/", "_");
+  return name?.replaceAll(":", "：").replaceAll("/", "_").replaceAll("\\", "_");
 };
 
 export const UploadModal = defineComponent({
@@ -52,6 +52,8 @@ export const UploadModal = defineComponent({
       <div>
         <div
           onClick={async () => {
+            const osType = await type();
+            const isWindows = osType === "Windows_NT";
             const path = await open({
               title: "选择上传位置",
               directory: props.mode === "DIR",
@@ -59,6 +61,8 @@ export const UploadModal = defineComponent({
               // 文件夹暂时不支持多选上传
               multiple: props.mode !== "DIR",
             });
+
+            const delimiter = isWindows ? "\\" : "/";
             const baseUrl = settingStore.host;
             if (path?.length) {
               if (props.mode === "FILE") {
@@ -66,7 +70,7 @@ export const UploadModal = defineComponent({
                 if (Array.isArray(path) && path.length > 1) {
                   // 多文件上传
                   const files = path.map((item) => {
-                    const fileName = replaceFileName(last(item.split("/")) || "");
+                    const fileName = replaceFileName(last(item.split(delimiter)) || "");
                     const filePath = `${currentPath.value === "/" ? "" : currentPath.value}/${fileName}`;
                     const checkObjectUrl = `${baseUrl}/api/storage/v0/objects/check?authorization=${getAuthorization()}&path=${filePath}`;
 
@@ -113,12 +117,12 @@ export const UploadModal = defineComponent({
                 } else {
                   const _path = Array.isArray(path) ? path[0] : path;
                   //   单文件上传
-                  const fileName = replaceFileName(last(_path.split("/")) || "");
+                  const fileName = replaceFileName(last(_path.split(delimiter)) || "");
                   if (diskStore.objects.find((item) => !item.isDir && item.name === fileName)) {
                     return message.warn("文件已存在");
                   }
                   const filePath = joinPath(fileName);
-                  console.log(filePath, "filePath");
+
                   const checkObjectUrl = `${baseUrl}/api/storage/v0/objects/check`;
                   const id = uuid();
                   const uploadData: ITransmission = {
@@ -147,7 +151,7 @@ export const UploadModal = defineComponent({
               } else {
                 // 文件夹上传
                 const _path = Array.isArray(path) ? path[0] : path;
-                let dirName = last(_path.split("/"))!;
+                let dirName = last(_path.split(delimiter))!;
                 // 如果重名了
                 if (diskStore.objects.filter((item) => item.isDir).find((dir) => dir.name === dirName)) {
                   dirName = `${dirName}_${dayjs().format("YYYY_MM_DD_HH_mm_ss")}`;

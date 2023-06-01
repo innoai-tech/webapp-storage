@@ -94,6 +94,8 @@ export const AuthGroupMemberPanel = defineComponent({
               <div class={"flex gap-2"}></div>
               <div>
                 <InputSearch
+                  // @ts-ignore 禁用 mac 拼写提示
+                  spellcheck="false"
                   v-model:value={authGroupMemberPanelStore.searchName}
                   class={"flex h-full items-center w-50"}
                   placeholder="请输入用户名称搜索"

@@ -9,6 +9,7 @@ import { Admin } from "@src/pages/admin";
 import { TaskLog } from "@src/pages/taskLog";
 import { Setting } from "@src/pages/setting";
 import { ClientManage } from "@src/pages/clientManage";
+import { Share } from "@src/pages/share";
 export const routes = [
   { path: "/login", component: Index, name: "login" },
 
@@ -63,6 +64,13 @@ export const routes = [
             name: "taskLog",
             children: [],
             meta: { title: "操作记录" },
+          },
+          {
+            path: "share",
+            component: Share,
+            name: "share",
+            children: [],
+            meta: { title: "分享管理" },
           },
           {
             path: "setting",

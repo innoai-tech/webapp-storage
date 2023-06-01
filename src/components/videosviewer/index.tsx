@@ -121,13 +121,6 @@ export const VideosViewer = defineComponent({
       });
     });
 
-    watch(
-      () => src.value,
-      () => {
-        console.log(src.value);
-      },
-    );
-
     return () => {
       return (
         <div

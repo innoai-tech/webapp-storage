@@ -53,6 +53,7 @@ export const useColumns = () => {
                   width: "80vw",
                   appContext: getCurrentInstance()?.appContext,
                   icon: null,
+                  centered: true,
                   content: createVNode(<TaskLog taskID={rowData.operationID} />),
                   cancelButtonProps: { style: { display: "none" } } as any,
                   onOk() {

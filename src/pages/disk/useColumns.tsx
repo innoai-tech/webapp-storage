@@ -1,6 +1,6 @@
 import { CellRendererParams } from "element-plus/es/components/table-v2/src/types";
 import { toFullTime } from "@src/utils/date";
-import { deleteDir, deleteObject, IObject } from "@src/src-clients/storage";
+import { deleteDir, deleteObject, dirStatistics } from "@src/src-clients/storage";
 import { useBreadCrumbPathsStore, useCurrentPath, useDiskStore, usePathsStore } from "@src/pages/disk/store";
 import { computed, unref, createVNode, getCurrentInstance } from "vue";
 import { ExclamationCircleOutlined, MoreOutlined } from "@ant-design/icons-vue";
@@ -33,6 +33,8 @@ import { AuthButton } from "@src/components/authButton";
 import { useCurrentAccountStore } from "@src/pages/account";
 import { open } from "@tauri-apps/api/dialog";
 import { downloadDir } from "@tauri-apps/api/path";
+import { ShareDirModal } from "@src/pages/disk/component/ShareDirModal";
+import { IServerControllerObjectCtlObject } from "../../src-clients/storage/index";
 
 export const useColumns = () => {
   const pathsStore = usePathsStore();
@@ -67,7 +69,7 @@ export const useColumns = () => {
     {
       key: "selection",
       width: 50,
-      cellRenderer: ({ rowData }: { rowData: IObject }) => {
+      cellRenderer: ({ rowData }: { rowData: IServerControllerObjectCtlObject }) => {
         const onChange = (e) => {
           const newMap = unref(checkedMap.value);
           const value = e.target.checked;
@@ -103,8 +105,9 @@ export const useColumns = () => {
       title: "名称",
       key: "name",
       dataKey: "name",
+      sortable: true,
       width: 400,
-      cellRenderer({ rowData }: { rowData: IObject }) {
+      cellRenderer({ rowData }: { rowData: IServerControllerObjectCtlObject }) {
         const isImg = isImage(rowData["content-type"]);
         return (
           <Tooltip
@@ -116,11 +119,12 @@ export const useColumns = () => {
             <span
               class={`flex items-center gap-2 w-full ${rowData.isDir || isImg ? "hover:underline cursor-pointer" : ""}`}
               onClick={() => {
+                if (store.loading) return;
                 if (rowData.isDir) {
                   breadCrumbPathsStore.setPaths(
                     breadCrumbPathsStore.paths.concat([
                       {
-                        relativePath: rowData.name,
+                        name: rowData.name,
                         path: rowData.path,
                         owner: rowData.owner,
                       },
@@ -143,10 +147,11 @@ export const useColumns = () => {
     },
     {
       title: "创建时间",
-      key: "updatedAt",
-      dataKey: "updatedAt",
+      key: "createdAt",
+      dataKey: "createdAt",
+      sortable: true,
       width: 200,
-      cellRenderer({ rowData }: { rowData: IObject }) {
+      cellRenderer({ rowData }: { rowData: IServerControllerObjectCtlObject }) {
         return <span>{toFullTime(rowData.updatedAt)}</span>;
       },
     },
@@ -155,7 +160,7 @@ export const useColumns = () => {
       key: "content-type",
       dataKey: "content-type",
       width: 140,
-      cellRenderer({ cellData, rowData }: CellRendererParams<IObject>) {
+      cellRenderer({ cellData, rowData }: CellRendererParams<IServerControllerObjectCtlObject>) {
         if (rowData.isDir) {
           return <span>文件夹</span>;
         }
@@ -165,9 +170,10 @@ export const useColumns = () => {
     {
       title: "大小",
       key: "size",
+      sortable: true,
       dataKey: "size",
       width: 140,
-      cellRenderer({ rowData }: { rowData: IObject }) {
+      cellRenderer({ rowData }: { rowData: IServerControllerObjectCtlObject }) {
         return <span>{getFileSize(rowData.size) || "-"}</span>;
       },
     },
@@ -177,7 +183,7 @@ export const useColumns = () => {
       dataKey: "path",
       width: 140,
       align: "center" as const,
-      cellRenderer({ rowData }: { rowData: IObject }) {
+      cellRenderer({ rowData }: { rowData: IServerControllerObjectCtlObject }) {
         const disabled = !rowData.isDir && !isImage(rowData["content-type"]) && !isVideo(rowData["content-type"]);
         return (
           <div class={"flex"}>
@@ -190,7 +196,7 @@ export const useColumns = () => {
                     breadCrumbPathsStore.setPaths(
                       breadCrumbPathsStore.paths.concat([
                         {
-                          relativePath: rowData.name,
+                          name: rowData.name,
                           path: rowData.path,
                         },
                       ]),
@@ -211,8 +217,6 @@ export const useColumns = () => {
               class={"ml-2"}
               type={"link"}
               onClick={async () => {
-                const files = store.objects.filter((obj) => !obj.isDir && checkedMap.value[obj.path]);
-                const dirs = store.objects.filter((obj) => obj.isDir && checkedMap.value[obj.path]);
                 const path = await open({
                   title: "选择下载位置",
                   directory: true,
@@ -292,6 +296,29 @@ export const useColumns = () => {
                           移动
                         </AuthButton>
                       </MenuItem>
+                      {rowData.isDir && (
+                        <MenuItem>
+                          <AuthButton
+                            class={"px-10 w-full"}
+                            type={"link"}
+                            hasPermission={store.roleType !== "GUEST"}
+                            onClick={() => {
+                              Modal.confirm({
+                                title: "分享文件夹",
+                                width: "40rem",
+                                icon: null,
+                                centered: true,
+                                content: createVNode(<ShareDirModal path={rowData.path} name={rowData.name} />),
+                                closable: true,
+                                cancelButtonProps: { style: { display: "none" } } as any,
+                                okButtonProps: { style: { display: "none" } } as any,
+                                wrapClassName: "confirmModal",
+                              });
+                            }}>
+                            分享
+                          </AuthButton>
+                        </MenuItem>
+                      )}
                       <MenuItem>
                         <AuthButton
                           type={"link"}
@@ -385,7 +412,7 @@ export const useColumns = () => {
   ];
 };
 
-function getFileType({ rowData }: { rowData: IObject }) {
+function getFileType({ rowData }: { rowData: IServerControllerObjectCtlObject }) {
   const users = useCurrentAccountStore();
   let type = "";
 

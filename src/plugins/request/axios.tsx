@@ -45,8 +45,6 @@ export const AxiosRequester = defineComponent({
           // set(config, "headers", {
           //   Authorization: getAuthorization(),
           // });
-
-          console.log(config.params);
         }
 
         // fixme 等待后端修复这个字段的逻辑 标记组件来源
