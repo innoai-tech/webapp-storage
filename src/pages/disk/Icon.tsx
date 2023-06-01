@@ -260,28 +260,26 @@ export const IconImage = defineComponent({
     },
   },
   setup(props) {
-    // 加载缩略图
-    const src = ref("");
-    const imageRef = ref<HTMLImageElement | null>(null);
-
-    onMounted(() => {
-      if (props.imageData.path) {
-        src.value = getObject.getConfig({
-          path: props.imageData.path,
-          // 指定了显示所类图就设置一下缩略图，方便快速加载
-          "image-process":
-            props.imageData?.["content-type"]?.includes("jpeg") ||
-            props.imageData?.["content-type"]?.includes("png") ||
-            props.imageData?.["content-type"]?.includes("jpg")
-              ? `resize(w:${64 * 3},m=fit,p=center)`
-              : undefined,
-        }).url;
-      }
-    });
     return () => {
       return (
         <div class={"w-4 h-4 flex items-center justify-center "}>
-          <img src={src.value} class={"w-4"} ref={imageRef} object-fit={"cover"} />
+          <img
+            crossorigin="anonymous"
+            src={
+              getObject.getConfig({
+                path: props.imageData.path,
+                // 指定了显示所类图就设置一下缩略图，方便快速加载
+                "image-process":
+                  props.imageData?.["content-type"]?.includes("jpeg") ||
+                  props.imageData?.["content-type"]?.includes("png") ||
+                  props.imageData?.["content-type"]?.includes("jpg")
+                    ? `resize(w:${64 * 3},m=fit,p=center)`
+                    : undefined,
+              }).url
+            }
+            class={"w-4"}
+            object-fit={"cover"}
+          />
         </div>
       );
     };
