@@ -1,5 +1,5 @@
 # Updater Log
 
-## v0.0.24
+## v0.0.25
 
-- fix 尝试修复 windows 图片无法加载的问题
+- fix 禁止 csp
