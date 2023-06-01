@@ -1,5 +1,5 @@
 # Updater Log
 
-## v0.0.21
+## v0.0.22
 
-- fix 删除测试文件
+- fix 更新 ci 文件
