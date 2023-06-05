@@ -7,7 +7,7 @@ import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
 import { useGroupsStore } from "@src/pages/org/orgPanel/index";
 import { UpdateOrgModal } from "@src/pages/org/orgPanel/UpdateOrgModal";
 import { AuthButton } from "@src/components/authButton";
-import { OrgClientModal } from "@src/pages/org/orgPanel/orgClientModal";
+import { OrgClientModal } from "@src/pages/org/orgPanel/OrgClientModal";
 
 export const useColumns = () => {
   const groupsStore = useGroupsStore();
