@@ -153,7 +153,7 @@ pub async fn download_core(
         Err(e) => println!("Error 重命名文件失败: {}", e),
     }
 
-    println!("下砸已成功");
+    println!("下载已成功");
     Ok(())
 }
 
@@ -341,7 +341,7 @@ async fn get_files(
     let base_url = url.clone();
     let url = match Url::parse_with_params(
         &url.clone(),
-        &[("authorization", auth.clone()), ("path", path.clone())],
+        &[("authorization", auth.clone()),("size", "-1".to_string()), ("path", path.clone())],
     ) {
         Ok(url) => url.to_string(),
         Err(err) => return Err(err.into()),
