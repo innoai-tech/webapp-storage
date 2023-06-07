@@ -20,7 +20,6 @@ import { useDiskStore } from "@src/pages/disk/store";
 
 export const useRoleOptions = () => {
   const store = useDiskStore();
-
   return computed(() => {
     if (!store.roleType) return [];
     const currentUserStore = useCurrentAccountStore();

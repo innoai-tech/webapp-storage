@@ -100,6 +100,7 @@ export const useDiskStore = defineStore("disk", () => {
     debounceInterval: 100,
     onSuccess(res) {
       total.value = res.total || 0;
+      roleType.value = res.roleType;
       objects.value = objects.value.concat(res.data || []);
     },
   });
