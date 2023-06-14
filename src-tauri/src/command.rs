@@ -13,6 +13,7 @@ use std::sync::Arc;
 use tokio::fs::File;
 use walkdir::WalkDir;
 use wasm_bindgen::prelude::*;
+use std::path::Path;
 
 // 文件夹批量下载
 #[derive(serde::Deserialize)]
@@ -385,11 +386,18 @@ pub async fn upload_dir(
         let _auth = auth.clone();
         let _window = window.clone();
         // 文件夹的远程 path 是用固定的远程系统内的文件夹 path + 相对于这个 path 的路径，这里需要处理一下
+        // 同时还要处理一下本地路径的转换，把本地路径拆分成一个文件名组成的数组，然后拼接/符号
+        let _relative_path = relative_path.display().to_string();
+        let formated_relative_path = Path::new(&_relative_path);
+        let components: Vec<String> = formated_relative_path.iter().map(|component| component.to_string_lossy().into_owned())
+        .collect();
+        let new_formated_relative_path = replace_file_name(&components.join("/"));
         let _origin_path = format!(
             "{}/{}",
             origin_path,
-            replace_file_name(&relative_path.display().to_string())
+            new_formated_relative_path
         );
+        
         let _current_complete_file_count = current_complete_file_count.clone();
         let _total_file_count = total_file_count.clone();
         // 总数+1
@@ -531,3 +539,4 @@ pub fn remove_download_task(ids: Vec<String>) {
 pub fn remove_upload_task(ids: Vec<String>) {
     DOWNLOAD_CONCURRENT_QUEUE.add_invalid_ids(ids)
 }
+

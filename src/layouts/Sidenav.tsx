@@ -1,4 +1,4 @@
-import { defineComponent } from "vue";
+import { defineComponent, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   ApartmentOutlined,
@@ -12,6 +12,7 @@ import {
   UserAddOutlined,
   UserOutlined,
 } from "@ant-design/icons-vue";
+import { getVersion } from "@tauri-apps/api/app";
 import { useCurrentAccountStore } from "@src/pages/account";
 import { useTransmissionStore } from "@src/pages/transmission";
 import { Button } from "ant-design-vue";
@@ -19,11 +20,17 @@ import { useAuth } from "@src/plugins/auth";
 
 export const Sidenav = defineComponent({
   setup() {
+    const version = ref("");
     const route = useRoute();
     const router = useRouter();
     const currentUserStore = useCurrentAccountStore();
     const transmissionStore = useTransmissionStore();
     const authStore = useAuth();
+    onMounted(() => {
+      getVersion().then((res) => {
+        version.value = res;
+      });
+    });
     return () => {
       const menus = [
         {
@@ -101,15 +108,18 @@ export const Sidenav = defineComponent({
               })}
             </ul>
           </div>
-          <Button
-            type={"link"}
-            class={"absolute bottom-14 left-4 text-xs"}
-            onClick={() => {
-              authStore.setAccess(null);
-            }}>
-            <LogoutOutlined />
-            退出登录
-          </Button>
+          <div class="absolute bottom-4 left-4 text-xs">
+            <Button
+              type={"link"}
+              class={"text-xs"}
+              onClick={() => {
+                authStore.setAccess(null);
+              }}>
+              <LogoutOutlined />
+              退出登录
+            </Button>
+            <span class={" text-gray-500 ml-14 text-xs"}>版本: {version.value}</span>
+          </div>
         </div>
       );
     };
