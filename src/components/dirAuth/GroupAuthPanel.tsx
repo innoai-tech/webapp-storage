@@ -20,9 +20,9 @@ import { useDiskStore } from "@src/pages/disk/store";
 
 export const useRoleOptions = () => {
   const store = useDiskStore();
+  const currentUserStore = useCurrentAccountStore();
   return computed(() => {
     if (!store.roleType) return [];
-    const currentUserStore = useCurrentAccountStore();
     return currentUserStore.account?.isAdmin
       ? Object.keys(RbacRoleType).map((key) => ({
           value: key,

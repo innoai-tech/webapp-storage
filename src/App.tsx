@@ -10,6 +10,7 @@ import antdZhCN from "ant-design-vue/es/locale/zh_CN";
 import { ConfigProvider } from "ant-design-vue";
 import { useTransmissionStore } from "@src/pages/transmission";
 import { invoke } from "@tauri-apps/api/tauri";
+
 ConfigProvider.config({
   theme: {
     ...theme,

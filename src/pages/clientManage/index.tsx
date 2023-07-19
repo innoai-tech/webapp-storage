@@ -1,6 +1,6 @@
 import { computed, createVNode, defineComponent, onMounted, ref } from "vue";
 import { useRequest } from "vue-request";
-import { InputSearch, Modal } from "ant-design-vue";
+import { Button, InputSearch, Modal } from "ant-design-vue";
 import { ApartmentOutlined } from "@ant-design/icons-vue";
 import {
   createAccountClient,
@@ -10,11 +10,10 @@ import {
 } from "@src/src-clients/storage";
 import { defineStore } from "pinia";
 import { Table } from "@src/components/table";
-import { AuthButton } from "@src/components/authButton";
 import { useColumns } from "@src/pages/clientManage/useColumns";
 import { CreateClientModal } from "@src/pages/clientManage/CreateClient";
 
-export const useClientsStore = defineStore("adminStore", () => {
+export const useClientsStore = defineStore("clientStore", () => {
   const searchClientID = ref("");
   const {
     data: clients,
@@ -89,7 +88,7 @@ export const ClientManage = defineComponent({
           <div class={"flex justify-end sticky top-0 bg-white mb-4"}>
             <div class={"flex flex-1 justify-between"}>
               <div class={"flex gap-2"}>
-                <AuthButton
+                <Button
                   icon={<ApartmentOutlined />}
                   class={"flex items-center"}
                   onClick={() => {
@@ -105,7 +104,7 @@ export const ClientManage = defineComponent({
                     });
                   }}>
                   添加凭证
-                </AuthButton>
+                </Button>
               </div>
               <div>
                 <InputSearch
