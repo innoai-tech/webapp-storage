@@ -1,6 +1,6 @@
 # Updater Log
 
-## v0.0.32
+## v0.0.33
 
-- fix 修复组织 tab 高度不正确的问题
+- feat 支持 ubuntu 22
 -
