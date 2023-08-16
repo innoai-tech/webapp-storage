@@ -7,6 +7,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri-dev": "tauri dev",
+    "tauri-build": "tauri build",
     "prepare": "husky install",
     "publish": "npm version ${npm_package_json_version} && git push origin --tags -f && npm publish",
     "c": "ts-node --files src/plugins/client/index.ts",

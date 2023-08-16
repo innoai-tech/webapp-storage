@@ -77,7 +77,7 @@ export const GroupAuthPanel = defineComponent({
 
     return () => {
       return (
-        <div>
+        <div class={"flex-1 h-full flex flex-col"}>
           <div class={"flex justify-end sticky top-0 bg-white mb-4"}>
             <div class={"flex flex-1 justify-end"}>
               <div>

@@ -183,6 +183,7 @@ export const DiskMenus = defineComponent({
                   icon: null,
                   width: "100rem",
                   closable: true,
+                  centered: true,
                   appContext: getCurrentInstance()?.appContext,
                   content: createVNode(
                     <DirAuthModal dir={{ name: last(currentPath.value.split("/")) || "/", path: currentPath.value }} />,

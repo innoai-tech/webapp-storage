@@ -93,9 +93,10 @@ export const DirAuthModal = defineComponent({
 
     return () => {
       return (
-        <div>
+        <div class={"h-[80vh] flex flex-col"}>
           <h4 class={"break-words"}>权限管理文件夹：{tabStore.currentDir?.name || "全部文件"}</h4>
           <Tabs
+            class={"flex-1"}
             activeKey={tabStore.tab}
             destroyInactiveTabPane={true}
             onChange={(tab) => {
