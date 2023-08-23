@@ -20,11 +20,13 @@ export const useSettingStore = defineStore(
     persist: { enabled: true },
   },
 );
+
 export const Setting = defineComponent({
   setup() {
+    const defaultBaseUrl = appConf()?.["SRV_STORAGE"];
     const settingStore = useSettingStore();
     const formState = ref({
-      host: settingStore.host,
+      host: settingStore.host?.trim() ? settingStore.host?.trim() : defaultBaseUrl,
     });
 
     return () => {
@@ -42,14 +44,24 @@ export const Setting = defineComponent({
               v-model:value={formState.value.host}
             />
           </FormItem>
+          <a
+            href={"javascript:;"}
+            class={"flex justify-end mb-10 color"}
+            onClick={() => {
+              formState.value.host = defaultBaseUrl;
+              message.success("已恢复默认地址");
+            }}>
+            恢复默认地址
+          </a>
           <div class={"flex justify-end"}>
             <Button
               type={"primary"}
               onClick={() => {
-                if (formState.value.host) {
-                  settingStore.host = formState.value.host;
+                if (formState.value.host?.trim()) {
+                  settingStore.host = formState.value.host?.trim();
                   message.success("修改成功");
                   Modal.destroyAll();
+                  location.reload();
                 }
               }}>
               确定

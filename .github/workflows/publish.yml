@@ -36,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, ubuntu-22.04, windows-latest]
+        platform: [macos-latest, ubuntu-20.04, ubuntu-22.04, windows-latest]
 
     runs-on: ${{ matrix.platform }}
 
@@ -86,5 +86,5 @@ jobs:
         with:
           releaseId: ${{ needs.create-release.outputs.RELEASE_UPLOAD_ID }}
           tagName: ${{ github.ref_name }}
-          releaseName: "storage v__VERSION__" # tauri-action replaces \_\_VERSION\_\_ with the app version.
+          releaseName: "storage v__VERSION__${{ matrix.platform }}" # tauri-action replaces \_\_VERSION\_\_ with the app version.
           releaseBody: "See the assets to download and install this version."

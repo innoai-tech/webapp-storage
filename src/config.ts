@@ -32,7 +32,7 @@ export const APP_CONFIG = {
   SRV_STORAGE: () => {
     // @ts-ignore
     if ((import.meta as any).env.PROD) {
-      return "http://172.20.50.27:20080";
+      return "https://storage.dev.innoai.tech";
     }
     return "http://172.20.30.92:8090";
   },

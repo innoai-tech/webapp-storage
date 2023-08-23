@@ -59,7 +59,7 @@ export const Index = defineComponent({
             type={"link"}
             onClick={() => {
               Modal.confirm({
-                title: "错误信息",
+                title: "域名配置",
                 closable: true,
                 width: "800px",
                 wrapClassName: "confirmModal",
@@ -122,7 +122,7 @@ export const Index = defineComponent({
                     location.href = url;
                   }
                 }}>
-                通过 {item.providerName?.toUpperCase()} 登录
+                通过 {item.desc?.toUpperCase()} 登录
               </Button>
             );
           })}

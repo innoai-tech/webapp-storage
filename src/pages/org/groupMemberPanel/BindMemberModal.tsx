@@ -1,4 +1,4 @@
-import { computed, defineComponent, PropType, ref } from "vue";
+import { computed, defineComponent, onMounted, PropType, ref } from "vue";
 import { Button, Form, FormItem, message, Modal, Select } from "ant-design-vue";
 
 import { useRequest } from "vue-request";
@@ -54,8 +54,22 @@ export const BindMemberModal = defineComponent({
     const membersStore = useMembersStore();
     const formState = ref<IFormState>({});
 
-    const { data: groupMembers } = useRequest(() => listGroupAccount({ groupID: props.groupID }), {
+    const { data: groupMembers, run } = useRequest(listGroupAccount, {
       refreshOnWindowFocus: true,
+      manual: true,
+      onSuccess(res) {
+        if (!res.data?.length) {
+          message.warn("成员列表为空");
+        }
+      },
+      onError(err) {
+        message.error(`获取成员列表失败${err.message}`);
+      },
+    });
+
+    onMounted(() => {
+      run({ groupID: props.groupID });
+      membersStore.refresh();
     });
 
     const groupMemberIDs = computed(() => groupMembers.value?.data?.map((item) => item.accountID));
