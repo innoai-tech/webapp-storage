@@ -13,7 +13,7 @@ export const UploadingListPanel = defineComponent({
     const store = useUploadPanelCheckedStore();
     const hasChecked = computed(() => Object.values(store.checkedMap).find((item) => !!item));
     return () => (
-      <div>
+      <div class={"h-full flex flex-col"}>
         <div>
           <Button
             type={"primary"}

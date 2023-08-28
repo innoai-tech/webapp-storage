@@ -20,9 +20,11 @@ async fn main() {
             command::upload_dir,
             command::open_folder,
             command::upload_file,
+            command::set_auth_token,
             command::upload_files,
             command::remove_upload_task,
             command::remove_download_task,
+            emit::emit_interval_refresh_token,
             emit::emit_every_second
         ])
         .run(tauri::generate_context!())

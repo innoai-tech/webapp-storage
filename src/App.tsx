@@ -10,7 +10,6 @@ import antdZhCN from "ant-design-vue/es/locale/zh_CN";
 import { ConfigProvider } from "ant-design-vue";
 import { useTransmissionStore } from "@src/pages/transmission";
 import { invoke } from "@tauri-apps/api/tauri";
-
 ConfigProvider.config({
   theme: {
     ...theme,
@@ -26,6 +25,9 @@ export const App = defineComponent({
 
       //  开启和后端的固定信息通道
       invoke("emit_every_second");
+
+      // 开启定时刷新 token
+      invoke("emit_interval_refresh_token");
     });
     return () => {
       return (

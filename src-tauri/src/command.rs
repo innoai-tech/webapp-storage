@@ -2,7 +2,7 @@ use crate::data_store::{
     DOWNLOAD_COMPLETE_STORE, DOWNLOAD_PROGRESS_STORE, UPLOAD_COMPLETE_STORE, UPLOAD_PROGRESS_STORE,
 };
 use crate::download::{download, download_dir};
-use crate::queue::{DOWNLOAD_CONCURRENT_QUEUE, UPLOAD_CONCURRENT_QUEUE};
+use crate::queue::{DOWNLOAD_CONCURRENT_QUEUE,AUTH_TOKEN, UPLOAD_CONCURRENT_QUEUE};
 use crate::upload::upload;
 use opener::open;
 use pathdiff::diff_paths;
@@ -21,7 +21,6 @@ pub struct DownloadDirsParams {
     get_files_base_url: String,      // 获取文件夹下的文件 url
     download_files_base_url: String, // 获取文件 blob 信息的 url
     local_path: String,
-    auth: String,
     dirs: Vec<DownloadDirsParamsData>,
 }
 
@@ -33,6 +32,14 @@ pub struct DownloadDirsParamsData {
     id: String,
 }
 
+// 设置 token
+#[tauri::command]
+pub fn set_auth_token(auth: String) {
+  let mut current_token = AUTH_TOKEN.lock().unwrap();
+  *current_token = auth.to_string()
+}
+
+
 #[tauri::command]
 pub async fn download_dirs(dirs_json_str: String) {
     // 解析传入的 JSON 字符串
@@ -42,7 +49,6 @@ pub async fn download_dirs(dirs_json_str: String) {
     let get_files_base_url = params.get_files_base_url;
     let download_files_base_url = params.download_files_base_url;
     let local_path = params.local_path;
-    let auth = params.auth;
     let downloaded_file_count = Arc::new(AtomicU64::new(0));
     for dir in dirs {
         let id = dir.id.clone();
@@ -51,7 +57,6 @@ pub async fn download_dirs(dirs_json_str: String) {
         let get_files_base_url = get_files_base_url.clone();
         let download_files_base_url = download_files_base_url.clone();
         let local_path = local_path.clone();
-        let auth = auth.clone();
         let downloaded_file_count = downloaded_file_count.clone();
 
         UPLOAD_CONCURRENT_QUEUE.push(
@@ -65,7 +70,6 @@ pub async fn download_dirs(dirs_json_str: String) {
                         dir.name.clone(),
                         dir.path.clone(),
                         local_path.clone(),
-                        auth.clone(),
                         id.clone(),
                         total_file_count.clone(),
                         create_task_url.clone(),
@@ -106,7 +110,6 @@ pub struct DownloadFilesParams {
     url: String,
     file_name: String,
     local_path: String,
-    auth: String,
     id: String,
     size: u64,
 }
@@ -119,7 +122,6 @@ pub async fn download_files(files_json_str: String) -> String {
     // 遍历文件列表，将每个文件的上传任务加入上传队列
     for file in files {
         let size = file.size.clone();
-        let auth = file.auth.clone();
         let id = file.id.clone();
         let _id = id.clone();
         let file_name = file.file_name.clone();
@@ -134,7 +136,6 @@ pub async fn download_files(files_json_str: String) -> String {
                     match download(
                         url,
                         local_path,
-                        auth,
                         file_name,
                         id.clone(),
                         Arc::new(AtomicU64::new(0)),
@@ -181,7 +182,6 @@ pub async fn upload_file(
     origin_path: String,
     check_object_url: String,
     local_path: String,
-    auth: String,
     id: String,
     window: tauri::Window,
 ) {
@@ -202,7 +202,6 @@ pub async fn upload_file(
                             check_object_url.clone(),
                             origin_path,
                             local_path,
-                            auth,
                             id.clone(),
                             uploaded_len,
                             total_len,
@@ -230,7 +229,18 @@ pub async fn upload_file(
                             }
                         }
                     }
-                    Err(e) => eprintln!("Error: {:?}", e),
+                    Err(e) => {
+                        let err_str = format!(
+                            "GET SIZE ERROR: {}",
+                            e
+                        );
+
+                        UPLOAD_COMPLETE_STORE
+                          .lock()
+                          .unwrap()
+                          .add(id.clone(), Some(err_str.clone()));
+                        eprintln!("GET_UPLOAD_FILE_SIZE Error: {:?}", e)
+                    },
                 }
             });
         },
@@ -245,7 +255,6 @@ pub struct UploadFilesParams {
     check_object_url: String,
     origin_path: String,
     local_path: String,
-    auth: String,
     id: String,
 }
 
@@ -256,7 +265,6 @@ pub async fn upload_files(files_json_str: String, window: tauri::Window) {
 
     // 遍历文件列表，将每个文件的上传任务加入上传队列
     for file in files {
-        let auth = file.auth.clone();
         let origin_path = file.origin_path.clone();
         let id = file.id.clone();
         let _id = id.clone();
@@ -279,7 +287,6 @@ pub async fn upload_files(files_json_str: String, window: tauri::Window) {
                                 check_object_url,
                                 origin_path,
                                 local_path,
-                                auth,
                                 id.clone(),
                                 uploaded_size_len,
                                 total_size_len,
@@ -309,7 +316,18 @@ pub async fn upload_files(files_json_str: String, window: tauri::Window) {
                                 }
                             }
                         }
-                        Err(e) => eprintln!("Error: {:?}", e),
+                        Err(e) => {
+                            let err_str = format!(
+                                "GET SIZE ERROR: {}",
+                                e
+                            );
+                            // 插入一条错误信息
+                            UPLOAD_COMPLETE_STORE
+                              .lock()
+                              .unwrap()
+                              .add(id.clone(), Some(err_str.clone()));
+                            eprintln!("GET_UPLOAD_FILES_SIZE Error: {:?}", e)
+                        },
                     }
                 });
             },
@@ -326,7 +344,6 @@ pub async fn upload_dir(
     origin_path: String,
     check_object_url: String,
     task_id: String,
-    auth: String,
     id: String,
     window: tauri::Window,
 ) {
@@ -383,7 +400,6 @@ pub async fn upload_dir(
         let _url = url.clone();
         let _id = id.clone();
         let _task_id = task_id.clone();
-        let _auth = auth.clone();
         let _window = window.clone();
         // 文件夹的远程 path 是用固定的远程系统内的文件夹 path + 相对于这个 path 的路径，这里需要处理一下
         // 同时还要处理一下本地路径的转换，把本地路径拆分成一个文件名组成的数组，然后拼接/符号
@@ -397,7 +413,7 @@ pub async fn upload_dir(
             origin_path,
             new_formated_relative_path
         );
-        
+
         let _current_complete_file_count = current_complete_file_count.clone();
         let _total_file_count = total_file_count.clone();
         // 总数+1
@@ -414,7 +430,6 @@ pub async fn upload_dir(
                         _check_object_url,
                         _origin_path,
                         _path,
-                        _auth,
                         _id.clone(),
                         uploaded_len_clone_inner,
                         total_len_clone_inner.clone(),
@@ -444,7 +459,7 @@ pub async fn upload_dir(
                     let current_complete_len =
                         _current_complete_file_count.fetch_add(1, Ordering::Relaxed) + 1;
                     let total_len = _total_file_count.load(Ordering::Relaxed);
-                    println!("总共：{}, 当前已上传 {}", total_len, current_complete_len);
+                    println!("总共：{}, 当前已上传 {}， path: {}", total_len, current_complete_len,  path.to_string().clone() );
 
                     if current_complete_len == _total_file_count.load(Ordering::Relaxed) {
                         UPLOAD_COMPLETE_STORE.lock().unwrap().add(_id.clone(), None);
@@ -539,4 +554,3 @@ pub fn remove_download_task(ids: Vec<String>) {
 pub fn remove_upload_task(ids: Vec<String>) {
     DOWNLOAD_CONCURRENT_QUEUE.add_invalid_ids(ids)
 }
-

@@ -2,6 +2,7 @@ use crate::crypto::get_sha256;
 use crate::data_store::UPLOAD_PROGRESS_STORE;
 use chrono::{Local, SecondsFormat};
 use futures_util::StreamExt;
+use crate::queue::{AUTH_TOKEN};
 use mime_guess::from_path;
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
@@ -12,6 +13,23 @@ use std::time::Duration;
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 use url::Url;
+use reqwest::StatusCode;
+use std::error::Error;
+use std::fmt;
+#[derive(Debug)]
+struct CustomError {
+    status: StatusCode,
+    message: String,
+}
+
+impl Error for CustomError {}
+
+impl fmt::Display for CustomError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "CustomError: {} - {}", self.status, self.message)
+    }
+}
+
 
 // 定义上传函数
 pub async fn upload_core(
@@ -23,8 +41,6 @@ pub async fn upload_core(
     origin_path: String,
     // 本地文件路径
     local_path: String,
-    // 认证信息
-    auth: String,
     // 文件ID
     id: String,
     // 已上传长度
@@ -35,6 +51,8 @@ pub async fn upload_core(
     // 携带一个任务 id
     task_id: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // 读取 token
+    let current_token = AUTH_TOKEN.lock().unwrap();
     // 支持重试
     let retry_policy = ExponentialBackoff {
         max_n_retries: 2,
@@ -72,7 +90,7 @@ pub async fn upload_core(
 
     // 拼接上传文件URL
     let mut params = vec![
-        ("authorization", auth.clone()),
+        ("authorization", current_token.clone()),
         ("path", origin_path.clone()),
         ("SHA256", sha256.clone()),
         ("content-type", content_type.to_string()),
@@ -89,7 +107,7 @@ pub async fn upload_core(
     let check_object_url = match Url::parse_with_params(
         &check_object_url.clone(),
         &[
-            ("authorization", auth.clone()),
+            ("authorization", current_token.clone()),
             ("path", origin_path.clone()),
             ("SHA256", sha256.clone()),
             ("content-type", content_type.to_string()),
@@ -103,21 +121,36 @@ pub async fn upload_core(
     };
 
     // 发送检查请求，添加一个重试机制
-
     let res = match ClientBuilder::new(reqwest::Client::new())
         .with(RetryTransientMiddleware::new_with_policy(retry_policy))
         .build()
         .get(check_object_url)
         .timeout(Duration::from_secs(300))
-        .bearer_auth(auth.clone())
+        .bearer_auth(current_token.clone())
         .send()
         .await
     {
         Ok(res) => res,
         Err(e) => {
+            eprintln!("检查 SHA256 请求失败: {:?}",  e);
             return Err(Box::new(e));
         }
     };
+    if res.status() == StatusCode::UNAUTHORIZED {
+      match window.emit("tauri://refresh_token", "") {
+        Ok(res) => res,
+        Err(err) => {
+          println!("EMIT ERR: {:?}", err);
+        }
+      }
+      let error = CustomError {
+        status: res.status(),
+        message: format!("401: {:?}", local_path.clone()),
+      };
+      return Err(Box::new(error));
+    }
+
+
 
     // 如果返回码为200，则表示该对象已经存在，则直接做秒传处理
     if res.status().is_success() {
@@ -127,7 +160,7 @@ pub async fn upload_core(
             .build()
             .post(url.as_str().clone())
             .timeout(Duration::from_secs(300))
-            .bearer_auth(auth.clone())
+            .bearer_auth(current_token.clone())
             .header("content-type", "application/octet-stream")
             .send()
             .await
@@ -217,7 +250,7 @@ pub async fn upload_core(
     // 发送上传请求
     match reqwest::Client::new()
         .post(url.as_str())
-        .bearer_auth(auth.clone())
+        .bearer_auth(current_token.clone())
         .header("content-type", "application/octet-stream")
         .body(reqwest::Body::wrap_stream(async_stream))
         .send()
@@ -259,8 +292,6 @@ pub async fn upload(
     origin_path: String,
     // 本地文件路径
     local_path: String,
-    // 认证信息
-    auth: String,
     // 文件ID
     id: String,
     // 已上传长度
@@ -289,7 +320,6 @@ pub async fn upload(
             check_object_url.clone(),
             origin_path.clone(),
             local_path.clone(),
-            auth.clone(),
             id.clone(),
             uploaded_len.clone(),
             total_len.clone(),
@@ -313,7 +343,7 @@ pub async fn upload(
                 if retry_count < 3 {
                     retry_count += 1;
                     let timestamp = Local::now().to_rfc3339_opts(SecondsFormat::Secs, true);
-                    let delay_ms: u64 = retry_count.pow(retry_count.try_into().unwrap()) * 1000;
+                    let delay_ms: u64 = retry_count.pow(retry_count.try_into().unwrap()) * 1000 + 2000;
                     tokio::time::sleep(Duration::from_millis(delay_ms)).await;
                     println!("上传失败重试中... ({}/3), {}", retry_count, timestamp);
                 } else {

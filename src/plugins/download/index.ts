@@ -29,7 +29,6 @@ export const downloadFiles = async (files: { name: string; size: number; path: s
     return {
       download,
       url: url,
-      auth: auth,
       localPath: path,
       fileName: `${download.name}`,
       id: download.id,
@@ -45,7 +44,6 @@ export const downloadFiles = async (files: { name: string; size: number; path: s
         _files.map((file) => ({
           url: file.url,
           size: file.size,
-          auth: file.auth,
           file_name: file.fileName,
           local_path: file.localPath,
           id: file.id,
@@ -86,7 +84,6 @@ export const downloadDirs = async (dirs: IObjectObjectInfo[], path: string) => {
         get_files_base_url: listObjects.getConfig({ path: "" }).baseUrl,
         download_files_base_url: getObject.getConfig({ path: "" }).baseUrl,
         local_path: path,
-        auth: getAuthorization(),
         dirs: _dirs.map((item) => ({
           create_task_url: createOperationTask.getConfig({ body: { desc: "" } }).url,
           name: item.name,

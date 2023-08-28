@@ -59,17 +59,35 @@ export const DiskMenus = defineComponent({
     const { runAsync: objectDelete } = useRequest(deleteObject, {
       manual: true,
     });
-    const { runAsync: getDirStatistics, loading: getDirStatisticsLoading } = useRequest(dirStatistics, {
+    const {
+      runAsync: getDirStatistics,
+      cancel: cancelGetDirStatistics,
+      loading: getDirStatisticsLoading,
+    } = useRequest(dirStatistics, {
       manual: true,
     });
 
     const searchDirs = ref<IObjectObjectSearchDataList | null>(null);
-    const { runAsync: searchDir, loading: searchDirLoading } = useRequest(dirSearch, {
+    const {
+      runAsync: searchDir,
+
+      loading: searchDirLoading,
+    } = useRequest(dirSearch, {
       manual: true,
       onSuccess(res) {
         searchDirs.value = { total: res.total, data: res.data?.filter((item) => item.name && item.path) || [] };
       },
     });
+
+    // 变更目录后取消统计请求
+    watch(
+      () => currentPath.value,
+      () => {
+        if (getDirStatisticsLoading) {
+          cancelGetDirStatistics();
+        }
+      },
+    );
 
     return () => {
       return (
@@ -418,7 +436,7 @@ export const DiskMenus = defineComponent({
                                   pathsStore.setPaths(store.goToPath(item.path));
                                 } else {
                                   // 文件进入父级路径，也就是之前整理的路径里最后一个的绝对路径
-                                  const path = pathMap[last(paths)];
+                                  const path = pathMap[last(paths)!];
                                   pathsStore.setPaths(store.goToPath(path));
                                 }
 

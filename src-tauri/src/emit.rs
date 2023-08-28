@@ -17,6 +17,25 @@ pub struct TransmissionUploadEmit {
     upload_progress: Vec<UploadProgressItem>,
 }
 
+// 前端定时器存在不准确的问题，注册一个后端的定时器来定时触发前端刷新 token
+#[tauri::command]
+pub async fn emit_interval_refresh_token(window: Window) {
+  tokio::spawn(async move {
+      // 一分钟刷一次
+      let mut interval = tokio::time::interval(Duration::from_secs(60));
+      loop {
+          interval.tick().await;
+          match window.emit("tauri://interval_refresh_token", "") {
+            Ok(res) => res,
+            Err(err) => {
+                println!("EMIT ERR: {:?}", err);
+            }
+        }
+       
+      }
+  });
+}
+
 #[tauri::command]
 pub async fn emit_every_second(window: Window) {
     static mut EMIT_ALREADY_STARTED: bool = false;
@@ -47,6 +66,8 @@ pub async fn emit_every_second(window: Window) {
         // 获取下载完成和下载进度信息
         let download_complete_infos = download_complete_store.get();
         let download_progress = dwnload_progress_store.get();
+
+        // 如果需要刷新 token，发送命令给前端
 
         // 发送上传数据到前端
         if !upload_complete_infos.is_empty() || !upload_progress.is_empty() {

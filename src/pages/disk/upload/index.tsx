@@ -89,7 +89,6 @@ export const UploadModal = defineComponent({
                       checkObjectUrl,
                       url: `${baseUrl}/api/storage/v0/objects/upload`,
                       originPath: `${currentPath.value === "/" ? "" : currentPath.value}/${fileName}`,
-                      auth: getAuthorization(),
                       localPath: item,
                       id,
                     };
@@ -104,7 +103,6 @@ export const UploadModal = defineComponent({
                       files.map((file) => ({
                         check_object_url: file.checkObjectUrl,
                         url: file.url,
-                        auth: file.auth,
                         origin_path: file.originPath,
                         local_path: file.localPath,
                         id: file.id,
@@ -139,7 +137,6 @@ export const UploadModal = defineComponent({
                     checkObjectUrl,
                     origin_path: filePath,
                     url: `${baseUrl}/api/storage/v0/objects/upload`,
-                    auth: getAuthorization(),
                     originPath: filePath,
                     localPath: _path,
                     id,
@@ -172,7 +169,6 @@ export const UploadModal = defineComponent({
                     invoke("upload_dir", {
                       checkObjectUrl,
                       url,
-                      auth: getAuthorization(),
                       dirPath: _path,
                       taskId: res.taskCode,
                       originPath: newDirPath,

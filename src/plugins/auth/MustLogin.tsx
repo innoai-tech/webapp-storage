@@ -1,10 +1,9 @@
-import { computed, defineComponent, watch } from "vue";
+import { computed, defineComponent, onMounted, watch } from "vue";
 import { RouterView, useRouter } from "vue-router";
 import { useAuth } from "@src/plugins/auth/index";
 import { useRefreshToken } from "@src/plugins/auth/useRefreshToken";
 import dayjs from "dayjs";
 import { useCurrentAccountStore } from "@src/pages/account";
-
 export const MustLogin = defineComponent({
   setup: function () {
     const router = useRouter();
@@ -16,6 +15,7 @@ export const MustLogin = defineComponent({
     const isValidToken = computed(() => {
       return auth.access?.expiresDate && auth.access.expiresDate - dayjs().valueOf() > 0;
     });
+
     watch(
       () => isValidToken.value,
       () => {
