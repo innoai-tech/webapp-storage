@@ -52,150 +52,160 @@ export const UploadModal = defineComponent({
       <div>
         <div
           onClick={async () => {
-            const osType = await type();
-            const isWindows = osType === "Windows_NT";
-            const path = await open({
-              title: "选择上传位置",
-              directory: props.mode === "DIR",
-              defaultPath: await downloadDir(),
-              // 文件夹暂时不支持多选上传
-              multiple: props.mode !== "DIR",
-            });
+            try {
+              const osType = await type();
+              message.success("开始上传");
+              const isWindows = osType === "Windows_NT";
+              if (isWindows) {
+                message.success("系统 WINDOWS");
+              }
+              const path = await open({
+                title: "选择上传位置",
+                directory: props.mode === "DIR",
+                defaultPath: await downloadDir(),
+                // 文件夹暂时不支持多选上传
+                multiple: props.mode !== "DIR",
+              });
 
-            const delimiter = isWindows ? "\\" : "/";
-            const baseUrl = settingStore.host;
-            if (path?.length) {
-              if (props.mode === "FILE") {
-                // 只有文件支持多个
-                if (Array.isArray(path) && path.length > 1) {
-                  // 多文件上传
-                  const files = path.map((item) => {
-                    const fileName = replaceFileName(last(item.split(delimiter)) || "");
-                    const filePath = `${currentPath.value === "/" ? "" : currentPath.value}/${fileName}`;
-                    const checkObjectUrl = `${baseUrl}/api/storage/v0/objects/check?authorization=${getAuthorization()}&path=${filePath}`;
+              message.success("位置选择完毕");
 
+              const delimiter = isWindows ? "\\" : "/";
+              const baseUrl = settingStore.host;
+              if (path?.length) {
+                if (props.mode === "FILE") {
+                  // 只有文件支持多个
+                  if (Array.isArray(path) && path.length > 1) {
+                    // 多文件上传
+                    const files = path.map((item) => {
+                      const fileName = replaceFileName(last(item.split(delimiter)) || "");
+                      const filePath = `${currentPath.value === "/" ? "" : currentPath.value}/${fileName}`;
+                      const checkObjectUrl = `${baseUrl}/api/storage/v0/objects/check?authorization=${getAuthorization()}&path=${filePath}`;
+
+                      const id = uuid();
+                      const uploadData: ITransmission = {
+                        id,
+                        size: 0,
+                        type: "UPLOAD",
+                        path: currentPath.value,
+                        name: fileName,
+                        progress: 0,
+                        created: dayjs().format("YYYY-MM-DD HH:mm"),
+                      };
+                      return {
+                        uploadData,
+                        checkObjectUrl,
+                        url: `${baseUrl}/api/storage/v0/objects/upload`,
+                        originPath: `${currentPath.value === "/" ? "" : currentPath.value}/${fileName}`,
+                        localPath: item,
+                        id,
+                      };
+                    });
+                    transmissionStore.setUpload(
+                      files.map((file) => file.uploadData).concat(transmissionStore.uploadList),
+                    );
+
+                    // 序列化数组必须下划线
+                    invoke("upload_files", {
+                      filesJsonStr: JSON.stringify(
+                        files.map((file) => ({
+                          check_object_url: file.checkObjectUrl,
+                          url: file.url,
+                          origin_path: file.originPath,
+                          local_path: file.localPath,
+                          id: file.id,
+                        })),
+                      ),
+                    }).then(() => {
+                      message.success("文件已开始上传");
+                      Modal.destroyAll();
+                    });
+                  } else {
+                    const _path = Array.isArray(path) ? path[0] : path;
+                    //   单文件上传
+                    const fileName = replaceFileName(last(_path.split(delimiter)) || "");
+                    if (diskStore.objects.find((item) => !item.isDir && item.name === fileName)) {
+                      return message.warn("文件已存在");
+                    }
+                    const filePath = joinPath(fileName);
+
+                    const checkObjectUrl = `${baseUrl}/api/storage/v0/objects/check`;
                     const id = uuid();
                     const uploadData: ITransmission = {
                       id,
                       size: 0,
+                      name: fileName,
                       type: "UPLOAD",
                       path: currentPath.value,
-                      name: fileName,
                       progress: 0,
                       created: dayjs().format("YYYY-MM-DD HH:mm"),
                     };
-                    return {
-                      uploadData,
+                    transmissionStore.setUpload([uploadData].concat(transmissionStore.uploadList));
+                    invoke("upload_file", {
                       checkObjectUrl,
+                      origin_path: filePath,
                       url: `${baseUrl}/api/storage/v0/objects/upload`,
-                      originPath: `${currentPath.value === "/" ? "" : currentPath.value}/${fileName}`,
-                      localPath: item,
-                      id,
-                    };
-                  });
-                  transmissionStore.setUpload(
-                    files.map((file) => file.uploadData).concat(transmissionStore.uploadList),
-                  );
-
-                  // 序列化数组必须下划线
-                  invoke("upload_files", {
-                    filesJsonStr: JSON.stringify(
-                      files.map((file) => ({
-                        check_object_url: file.checkObjectUrl,
-                        url: file.url,
-                        origin_path: file.originPath,
-                        local_path: file.localPath,
-                        id: file.id,
-                      })),
-                    ),
-                  }).then(() => {
-                    message.success("文件已开始上传");
-                    Modal.destroyAll();
-                  });
-                } else {
-                  const _path = Array.isArray(path) ? path[0] : path;
-                  //   单文件上传
-                  const fileName = replaceFileName(last(_path.split(delimiter)) || "");
-                  if (diskStore.objects.find((item) => !item.isDir && item.name === fileName)) {
-                    return message.warn("文件已存在");
-                  }
-                  const filePath = joinPath(fileName);
-
-                  const checkObjectUrl = `${baseUrl}/api/storage/v0/objects/check`;
-                  const id = uuid();
-                  const uploadData: ITransmission = {
-                    id,
-                    size: 0,
-                    name: fileName,
-                    type: "UPLOAD",
-                    path: currentPath.value,
-                    progress: 0,
-                    created: dayjs().format("YYYY-MM-DD HH:mm"),
-                  };
-                  transmissionStore.setUpload([uploadData].concat(transmissionStore.uploadList));
-                  invoke("upload_file", {
-                    checkObjectUrl,
-                    origin_path: filePath,
-                    url: `${baseUrl}/api/storage/v0/objects/upload`,
-                    originPath: filePath,
-                    localPath: _path,
-                    id,
-                  }).then(() => {
-                    message.success("文件已开始上传");
-                    Modal.destroyAll();
-                  });
-                }
-              } else {
-                // 文件夹上传
-                const _path = Array.isArray(path) ? path[0] : path;
-                let dirName = last(_path.split(delimiter))!;
-                // 如果重名了
-                if (diskStore.objects.filter((item) => item.isDir).find((dir) => dir.name === dirName)) {
-                  dirName = `${dirName}_${dayjs().format("YYYY_MM_DD_HH_mm_ss")}`;
-                }
-
-                const newDirPath = joinPath(currentPath.value, dirName);
-                // 创建文件夹
-                const res = await createOperationTask({
-                  body: {
-                    desc: `上传文件夹${dirName}`,
-                  },
-                });
-                createDirAsync({ path: newDirPath, taskCode: res.taskCode }).then(
-                  () => {
-                    const id = uuid();
-                    const checkObjectUrl = `${baseUrl}/api/storage/v0/objects/check`;
-                    const url = `${baseUrl}/api/storage/v0/objects/upload`;
-                    invoke("upload_dir", {
-                      checkObjectUrl,
-                      url,
-                      dirPath: _path,
-                      taskId: res.taskCode,
-                      originPath: newDirPath,
+                      originPath: filePath,
+                      localPath: _path,
                       id,
                     }).then(() => {
-                      transmissionStore.setUpload(
-                        [
-                          {
-                            id,
-                            path: newDirPath,
-                            type: "UPLOAD",
-                            size: 0,
-                            name: dirName,
-                            progress: 0,
-                            created: dayjs().format("YYYY-MM-DD HH:mm"),
-                          } as ITransmission,
-                        ].concat(transmissionStore.uploadList),
-                      );
+                      message.success("文件已开始上传");
                       Modal.destroyAll();
-                      message.success("文件夹已开始上传");
                     });
-                  },
-                  () => {
-                    message.warn("上传文件夹失败，请稍后再试");
-                  },
-                );
+                  }
+                } else {
+                  // 文件夹上传
+                  const _path = Array.isArray(path) ? path[0] : path;
+                  let dirName = last(_path.split(delimiter))!;
+                  // 如果重名了
+                  if (diskStore.objects.filter((item) => item.isDir).find((dir) => dir.name === dirName)) {
+                    dirName = `${dirName}_${dayjs().format("YYYY_MM_DD_HH_mm_ss")}`;
+                  }
+
+                  const newDirPath = joinPath(currentPath.value, dirName);
+                  // 创建文件夹
+                  const res = await createOperationTask({
+                    body: {
+                      desc: `上传文件夹${dirName}`,
+                    },
+                  });
+                  createDirAsync({ path: newDirPath, taskCode: res.taskCode }).then(
+                    () => {
+                      const id = uuid();
+                      const checkObjectUrl = `${baseUrl}/api/storage/v0/objects/check`;
+                      const url = `${baseUrl}/api/storage/v0/objects/upload`;
+                      invoke("upload_dir", {
+                        checkObjectUrl,
+                        url,
+                        dirPath: _path,
+                        taskId: res.taskCode,
+                        originPath: newDirPath,
+                        id,
+                      }).then(() => {
+                        transmissionStore.setUpload(
+                          [
+                            {
+                              id,
+                              path: newDirPath,
+                              type: "UPLOAD",
+                              size: 0,
+                              name: dirName,
+                              progress: 0,
+                              created: dayjs().format("YYYY-MM-DD HH:mm"),
+                            } as ITransmission,
+                          ].concat(transmissionStore.uploadList),
+                        );
+                        Modal.destroyAll();
+                        message.success("文件夹已开始上传");
+                      });
+                    },
+                    () => {
+                      message.warn("上传文件夹失败，请稍后再试");
+                    },
+                  );
+                }
               }
+            } catch (e) {
+              message.error(`上传出错${e}`);
             }
           }}
           class={

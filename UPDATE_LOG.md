@@ -1,6 +1,6 @@
 # Updater Log
 
-## v0.0.36
+## v0.0.37
 
-- feat 增加 ubuntu22 单独打包
+- feat 增加上传 log
 -
