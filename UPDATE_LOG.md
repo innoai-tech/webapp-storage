@@ -1,6 +1,6 @@
 # Updater Log
 
-## v0.0.35
+## v0.0.36
 
-- feat 修复下载/上传时 token 可能过期的问题
+- feat 增加 ubuntu22 单独打包
 -
