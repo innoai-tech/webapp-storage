@@ -220,7 +220,6 @@ export const useColumns = () => {
                 const path = await open({
                   title: "选择下载位置",
                   directory: true,
-                  defaultPath: await downloadDir(),
                 });
                 if (path?.length) {
                   const _path = Array.isArray(path) ? path[0] : path;

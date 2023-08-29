@@ -6,7 +6,6 @@ import { joinPath, useCurrentPath, useDiskStore } from "@src/pages/disk/store";
 import { invoke } from "@tauri-apps/api/tauri";
 import { open } from "@tauri-apps/api/dialog";
 import { v4 as uuid } from "uuid";
-import { downloadDir } from "@tauri-apps/api/path";
 import { last } from "lodash-es";
 import { useTransmissionStore } from "@src/pages/transmission";
 import { ITransmission } from "@src/pages/transmission/interface";
@@ -54,15 +53,10 @@ export const UploadModal = defineComponent({
           onClick={async () => {
             try {
               const osType = await type();
-              message.success("开始上传");
               const isWindows = osType === "Windows_NT";
-              if (isWindows) {
-                message.success("系统 WINDOWS");
-              }
               const path = await open({
                 title: "选择上传位置",
                 directory: props.mode === "DIR",
-                defaultPath: await downloadDir(),
                 // 文件夹暂时不支持多选上传
                 multiple: props.mode !== "DIR",
               });

@@ -1,16 +1,5 @@
 import { computed, createVNode, defineComponent, getCurrentInstance, ref, watch } from "vue";
-import {
-  Button,
-  Checkbox,
-  Dropdown,
-  InputSearch,
-  Menu,
-  MenuItem,
-  message,
-  Modal,
-  Select,
-  Tooltip,
-} from "ant-design-vue";
+import { Button, Checkbox, Dropdown, InputSearch, Menu, MenuItem, message, Modal, Tooltip } from "ant-design-vue";
 import { UploadModal } from "@src/pages/disk/upload";
 import {
   CloudDownloadOutlined,
@@ -40,7 +29,6 @@ import {
 import { AuthButton } from "@src/components/authButton";
 import { last } from "lodash-es";
 import { open } from "@tauri-apps/api/dialog";
-import { downloadDir } from "@tauri-apps/api/path";
 import { getFileSize } from "@src/utils/getFileSize";
 import { debounce } from "@querycap/lodash";
 import { TextEllipsis } from "@src/components/textEllipsis";
@@ -170,7 +158,6 @@ export const DiskMenus = defineComponent({
                 const path = await open({
                   title: "选择下载位置",
                   directory: true,
-                  defaultPath: await downloadDir(),
                 });
                 if (path?.length) {
                   const _path = Array.isArray(path) ? path[0] : path;
