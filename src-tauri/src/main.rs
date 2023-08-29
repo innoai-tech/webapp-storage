@@ -9,12 +9,13 @@ mod log;
 mod queue;
 mod throttle;
 mod upload;
-
 #[tokio::main]
 async fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_oauth::init())
         .invoke_handler(tauri::generate_handler![
+            command::close_devtools,
+            command::open_devtools,
             command::download_dirs,
             command::download_files,
             command::upload_dir,
@@ -29,4 +30,5 @@ async fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+
 }

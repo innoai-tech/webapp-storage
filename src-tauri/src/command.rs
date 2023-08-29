@@ -2,7 +2,7 @@ use crate::data_store::{
     DOWNLOAD_COMPLETE_STORE, DOWNLOAD_PROGRESS_STORE, UPLOAD_COMPLETE_STORE, UPLOAD_PROGRESS_STORE,
 };
 use crate::download::{download, download_dir};
-use crate::queue::{DOWNLOAD_CONCURRENT_QUEUE,AUTH_TOKEN, UPLOAD_CONCURRENT_QUEUE};
+use crate::queue::{GET_AUTH_TOKEN_LOADING,DOWNLOAD_CONCURRENT_QUEUE,AUTH_TOKEN, UPLOAD_CONCURRENT_QUEUE};
 use crate::upload::upload;
 use opener::open;
 use pathdiff::diff_paths;
@@ -35,13 +35,24 @@ pub struct DownloadDirsParamsData {
 // 设置 token
 #[tauri::command]
 pub fn set_auth_token(auth: String) {
-  let mut current_token = AUTH_TOKEN.lock().unwrap();
-  *current_token = auth.to_string()
+  let mut auth_token = AUTH_TOKEN.lock().unwrap();
+  *auth_token = auth.clone();
+  println!("重新设置 token {:?}", auth.clone().to_string());
+  let mut loading = GET_AUTH_TOKEN_LOADING.lock().unwrap(); // 获取写锁
+  *loading = false; // 修改布尔值
+}
+// 打开控制台
+#[tauri::command]
+pub fn open_devtools() {
+  // window.open_devtools();
+}
+#[tauri::command]
+pub fn close_devtools() {
+  // window.open_devtools();
 }
 
-
 #[tauri::command]
-pub async fn download_dirs(dirs_json_str: String) {
+pub async fn download_dirs(dirs_json_str: String,window: tauri::Window) {
     // 解析传入的 JSON 字符串
     let params: DownloadDirsParams = serde_json::from_str(&dirs_json_str).unwrap();
     let dirs: Vec<DownloadDirsParamsData> = params.dirs;
@@ -58,7 +69,7 @@ pub async fn download_dirs(dirs_json_str: String) {
         let download_files_base_url = download_files_base_url.clone();
         let local_path = local_path.clone();
         let downloaded_file_count = downloaded_file_count.clone();
-
+        let _window = window.clone();
         UPLOAD_CONCURRENT_QUEUE.push(
             move || {
                 let rt = tokio::runtime::Runtime::new().unwrap();
@@ -73,6 +84,7 @@ pub async fn download_dirs(dirs_json_str: String) {
                         id.clone(),
                         total_file_count.clone(),
                         create_task_url.clone(),
+                        _window
                     )
                     .await
                     {
@@ -115,7 +127,7 @@ pub struct DownloadFilesParams {
 }
 
 #[tauri::command]
-pub async fn download_files(files_json_str: String) -> String {
+pub async fn download_files(files_json_str: String, window: tauri::Window) -> String {
     // 解析传入的 JSON 字符串
     let files: Vec<DownloadFilesParams> = serde_json::from_str(&files_json_str).unwrap();
 
@@ -127,7 +139,7 @@ pub async fn download_files(files_json_str: String) -> String {
         let file_name = file.file_name.clone();
         let url = file.url.clone();
         let local_path = file.local_path.clone();
-
+        let _window = window.clone();
         DOWNLOAD_CONCURRENT_QUEUE.push(
             move || {
                 let rt = tokio::runtime::Runtime::new().unwrap();
@@ -141,6 +153,7 @@ pub async fn download_files(files_json_str: String) -> String {
                         Arc::new(AtomicU64::new(0)),
                         size.clone(),
                         None,
+                        _window
                     )
                     .await
                     {

@@ -8,14 +8,14 @@
   },
   "package": {
     "productName": "storage",
-    "version": "0.0.34"
+    "version": "0.0.35"
   },
   "tauri": {
     "allowlist": {
+      "all": true,
       "os": {
         "all": true
       },
-      "all": true,
       "path": {
         "all": true
       },

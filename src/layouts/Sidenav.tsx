@@ -17,6 +17,7 @@ import { useCurrentAccountStore } from "@src/pages/account";
 import { useTransmissionStore } from "@src/pages/transmission";
 import { Button } from "ant-design-vue";
 import { useAuth } from "@src/plugins/auth";
+import { invoke } from "@tauri-apps/api/tauri";
 
 export const Sidenav = defineComponent({
   setup() {
@@ -117,7 +118,13 @@ export const Sidenav = defineComponent({
               <LogoutOutlined />
               退出登录
             </Button>
-            <span class={" text-gray-500 ml-14 text-xs"}>版本: {version.value}</span>
+            <span
+              onClick={() => {
+                invoke("open_devtools");
+              }}
+              class={" text-gray-500 ml-14 text-xs"}>
+              版本: {version.value}
+            </span>
           </div>
         </div>
       );

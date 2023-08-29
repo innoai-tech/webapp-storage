@@ -20,9 +20,20 @@ pub struct TransmissionUploadEmit {
 // 前端定时器存在不准确的问题，注册一个后端的定时器来定时触发前端刷新 token
 #[tauri::command]
 pub async fn emit_interval_refresh_token(window: Window) {
+  static mut EMIT_ALREADY_STARTED: bool = false;
+
+  if unsafe { EMIT_ALREADY_STARTED } {
+      // 如果已经启动过就直接返回
+      return;
+  }
+
+  unsafe {
+      EMIT_ALREADY_STARTED = true;
+  }
+
   tokio::spawn(async move {
-      // 一分钟刷一次
-      let mut interval = tokio::time::interval(Duration::from_secs(60));
+      // 一分钟判断一次 token 是否过期
+      let mut interval = tokio::time::interval(Duration::from_secs(10));
       loop {
           interval.tick().await;
           match window.emit("tauri://interval_refresh_token", "") {

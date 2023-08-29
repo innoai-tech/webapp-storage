@@ -9,10 +9,13 @@ export const useRefreshToken = () => {
   const auth = useAuth();
   const getAuthorization = useAuthorization();
 
+  let state = false;
   watch(
-    () => auth.access,
+    () => auth.access?.accessToken,
     () => {
       if (auth.access?.accessToken) {
+        // 重新设置 token
+        if (state) return;
         invoke("set_auth_token", {
           auth: getAuthorization(),
         });
@@ -33,7 +36,6 @@ export const useRefreshToken = () => {
         },
       })
         .then((res) => {
-          console.log(res.access_token);
           auth.setAccess(res);
         })
         .finally(() => {
@@ -42,7 +44,6 @@ export const useRefreshToken = () => {
           }, 1000);
         });
     };
-
     // 前端定时器存在不准确的问题，所以从后端触发定时器
     listen("tauri://interval_refresh_token", () => {
       if (!auth.access || loading) return;
@@ -56,7 +57,7 @@ export const useRefreshToken = () => {
     // 触发立即刷新
     listen("tauri://refresh_token", () => {
       if (!auth.access || loading) return;
-      console.log("立即刷新 token");
+      state = false;
       refresh();
     });
   });

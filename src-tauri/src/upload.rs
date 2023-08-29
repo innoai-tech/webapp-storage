@@ -2,7 +2,7 @@ use crate::crypto::get_sha256;
 use crate::data_store::UPLOAD_PROGRESS_STORE;
 use chrono::{Local, SecondsFormat};
 use futures_util::StreamExt;
-use crate::queue::{AUTH_TOKEN};
+use crate::queue::{AUTH_TOKEN,refresh_token};
 use mime_guess::from_path;
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
@@ -52,7 +52,7 @@ pub async fn upload_core(
     task_id: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 读取 token
-    let current_token = AUTH_TOKEN.lock().unwrap();
+    let auth_token_str = AUTH_TOKEN.lock().unwrap();
     // 支持重试
     let retry_policy = ExponentialBackoff {
         max_n_retries: 2,
@@ -90,7 +90,7 @@ pub async fn upload_core(
 
     // 拼接上传文件URL
     let mut params = vec![
-        ("authorization", current_token.clone()),
+        ("authorization", auth_token_str.clone().to_string()),
         ("path", origin_path.clone()),
         ("SHA256", sha256.clone()),
         ("content-type", content_type.to_string()),
@@ -107,7 +107,7 @@ pub async fn upload_core(
     let check_object_url = match Url::parse_with_params(
         &check_object_url.clone(),
         &[
-            ("authorization", current_token.clone()),
+            ("authorization", auth_token_str.clone().to_string()),
             ("path", origin_path.clone()),
             ("SHA256", sha256.clone()),
             ("content-type", content_type.to_string()),
@@ -126,7 +126,7 @@ pub async fn upload_core(
         .build()
         .get(check_object_url)
         .timeout(Duration::from_secs(300))
-        .bearer_auth(current_token.clone())
+        .bearer_auth(auth_token_str.clone().to_string())
         .send()
         .await
     {
@@ -137,12 +137,7 @@ pub async fn upload_core(
         }
     };
     if res.status() == StatusCode::UNAUTHORIZED {
-      match window.emit("tauri://refresh_token", "") {
-        Ok(res) => res,
-        Err(err) => {
-          println!("EMIT ERR: {:?}", err);
-        }
-      }
+      refresh_token(&window);
       let error = CustomError {
         status: res.status(),
         message: format!("401: {:?}", local_path.clone()),
@@ -160,7 +155,7 @@ pub async fn upload_core(
             .build()
             .post(url.as_str().clone())
             .timeout(Duration::from_secs(300))
-            .bearer_auth(current_token.clone())
+            .bearer_auth(auth_token_str.clone().to_string())
             .header("content-type", "application/octet-stream")
             .send()
             .await
@@ -250,7 +245,7 @@ pub async fn upload_core(
     // 发送上传请求
     match reqwest::Client::new()
         .post(url.as_str())
-        .bearer_auth(current_token.clone())
+        .bearer_auth(auth_token_str.clone().to_string())
         .header("content-type", "application/octet-stream")
         .body(reqwest::Body::wrap_stream(async_stream))
         .send()

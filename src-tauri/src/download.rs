@@ -1,6 +1,5 @@
 use crate::data_store::{DOWNLOAD_COMPLETE_STORE, DOWNLOAD_PROGRESS_STORE};
-use crate::queue::{AUTH_TOKEN};
-use crate::queue::DOWNLOAD_CONCURRENT_QUEUE;
+use crate::queue::{refresh_token,DOWNLOAD_CONCURRENT_QUEUE, AUTH_TOKEN};
 use async_recursion::async_recursion;
 use chrono::{Local, SecondsFormat};
 use futures_util::StreamExt;
@@ -9,6 +8,7 @@ use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use std::fs;
+use reqwest::StatusCode;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
@@ -40,9 +40,9 @@ pub async fn download_core(
     current_downloaded_size: Arc<AtomicU64>, // 当前下载的尺寸，主要是兼容文件夹下载，文件下载固定传入 0
     total_size: u64,                         // 下载的总大小
     task_id: Option<String>,                 // 任务ID
+    window: tauri::Window,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // 读取 token
-    let current_token = AUTH_TOKEN.lock().unwrap();
+    let auth_token = AUTH_TOKEN.lock().unwrap();
     const FRAGMENT: &AsciiSet = &CONTROLS
         .add(b' ')
         .add(b'"')
@@ -52,12 +52,11 @@ pub async fn download_core(
         .add(b'#');
 
     // 拼接下载文件URL，先给 url 做个转码处理，然后添加 taskcode 进去
-
     let url = match task_id {
         Some(id) => {
             match Url::parse_with_params(
                 &utf8_percent_encode(&url.clone(), FRAGMENT).to_string(),
-                &[("taskCode", id)],
+                &[("authorization", auth_token.clone().to_string()),("taskCode", id)],
             ) {
                 Ok(url) => url,
                 Err(e) => {
@@ -95,7 +94,6 @@ pub async fn download_core(
     // 发送 GET 请求，获取文件内容
     let res = match reqwest::Client::new()
         .get(url)
-        .header("Authorization", current_token.clone())
         .send()
         .await
     {
@@ -104,6 +102,16 @@ pub async fn download_core(
             return Err(Box::new(e));
         }
     };
+
+    if res.status() == StatusCode::UNAUTHORIZED {
+      refresh_token(&window);
+      let body = res.text().await.map_err(|e| format!("{}", e))?;
+      return Err(format!(
+        "401: {}", body
+      )
+      .into());
+    }
+
 
     // 判断响应状态码是否为成功状态
     if !res.status().is_success() {
@@ -167,6 +175,7 @@ pub async fn download(
     current_downloaded_size: Arc<AtomicU64>, // 当前下载的尺寸，主要是兼容文件夹下载，文件下载固定传入 0
     total_size: u64,                         // 文件下载的总大小
     task_id: Option<String>,                 //任务 id
+    window: tauri::Window,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut retry_count: u64 = 0;
     loop {
@@ -178,6 +187,7 @@ pub async fn download(
             current_downloaded_size.clone(),
             total_size.clone(),
             task_id.clone(),
+            window.clone()
         )
         .await
         {
@@ -211,11 +221,12 @@ pub async fn download_dir(
     id: String,                       // 文件唯一标识符
     total_file_count: Arc<AtomicU64>, // 总下载数量
     create_task_url: String,          // 创建任务 url
+    window: tauri::Window,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 读取 token
-    let current_token = AUTH_TOKEN.lock().unwrap();
+    let auth_token_str = AUTH_TOKEN.lock().unwrap();
     // 获取文件列表
-    let files = get_files(get_files_base_url.clone(), dir_path.clone(), current_token.clone()).await?;
+    let files = get_files(get_files_base_url.clone(), dir_path.clone(),auth_token_str.clone()).await?;
     println!("文件内容：{:?}", files.len());
     if files.len() == 0 {
         return Err("文件夹内没有任何文件".into());
@@ -223,7 +234,7 @@ pub async fn download_dir(
     // 创建这批次任务 ID
     let task_id = create_task(
         create_task_url.clone(),
-        current_token.clone(),
+        auth_token_str.clone().to_string(),
         format!("下载文件夹{}", dir_name.clone()),
     )
     .await?;
@@ -237,7 +248,7 @@ pub async fn download_dir(
     for file in files {
         let url = match Url::parse_with_params(
             &download_files_base_url.clone(),
-            &[("authorization", current_token.clone()), ("path", file.path.clone())],
+            &[("path", file.path.clone())],
         ) {
             Ok(url) => url.to_string(),
             Err(err) => {
@@ -276,7 +287,8 @@ pub async fn download_dir(
 
         let local_path = local_path.to_string().clone();
         let task_id = task_id.clone();
-
+        let _window = window.clone();
+        let _auth_token_str = auth_token_str.clone();
         DOWNLOAD_CONCURRENT_QUEUE.push(
             move || {
                 let rt = tokio::runtime::Runtime::new().unwrap();
@@ -289,23 +301,25 @@ pub async fn download_dir(
                         downloaded_size.clone(),
                         files_total_size,
                         Some(task_id),
+                        _window.clone()
                     )
                     .await
                     {
                         Ok(_) => {
-                            // 失败的时候判断一下下载完了吗，下载完了就结束，没下载完插入一个错误信息
-                            let count = downloaded_file_count.fetch_add(1, Ordering::Relaxed);
-                            let total = total_file_count.load(Ordering::Relaxed);
-                            // 获取count的是 +1 前的值，所以手动 +1添加当前任务，判断一下是否都下载完毕了，如果是 0 代表没有文件也当做下完了
-                            if total == 0 || total == count + 1 {
-                                DOWNLOAD_COMPLETE_STORE
-                                    .lock()
-                                    .unwrap()
-                                    .add(id.clone(), None);
-                            }
+                          // 失败的时候判断一下下载完了吗，下载完了就结束，没下载完插入一个错误信息
+                          let count = downloaded_file_count.fetch_add(1, Ordering::Relaxed);
+                          let total = total_file_count.load(Ordering::Relaxed);
+                          // 获取count的是 +1 前的值，所以手动 +1添加当前任务，判断一下是否都下载完毕了，如果是 0 代表没有文件也当做下完了
+                          if total == 0 || total == count + 1 {
+                            DOWNLOAD_COMPLETE_STORE
+                            .lock()
+                            .unwrap()
+                            .add(id.clone(), None);
+
                         }
-                        Err(err) => {
-                            return Err(err);
+                      }
+                      Err(err) => {
+                          return Err(err);
                         }
                     };
                     Ok(())
@@ -335,38 +349,46 @@ struct GetFilesRes {
 async fn get_files(
     url: String,
     path: String,
-    auth: String,
+    token: String,
 ) -> Result<Vec<GetFilesResData>, Box<dyn std::error::Error>> {
     let base_url = url.clone();
     let url = match Url::parse_with_params(
-        &url.clone(),
-        &[("authorization", auth.clone()),("size", "-1".to_string()), ("path", path.clone())],
+      &url.clone(),
+      &[("authorization",token.clone().to_string()),("size", "-1".to_string()), ("path", path.clone())],
     ) {
-        Ok(url) => url.to_string(),
-        Err(err) => return Err(err.into()),
+      Ok(url) => url.to_string(),
+      Err(err) => return Err(err.into()),
     };
-
+    
     // 支持重试
     let retry_policy = ExponentialBackoff {
-        max_n_retries: 3,
-        max_retry_interval: std::time::Duration::from_millis(10000),
-        min_retry_interval: std::time::Duration::from_millis(3000),
-        backoff_exponent: 2,
+      max_n_retries: 1,
+      max_retry_interval: std::time::Duration::from_millis(12000),
+      min_retry_interval: std::time::Duration::from_millis(3000),
+      backoff_exponent: 2,
     };
-
+    
     let client = ClientBuilder::new(reqwest::Client::new())
-        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-        .build();
-
+    .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+    .build();
+  
     match client
-        .get(url)
-        .timeout(Duration::from_secs(300))
-        .bearer_auth(auth.clone())
-        .send()
-        .await
+    .get(url)
+    .timeout(Duration::from_secs(300))
+    .send()
+    .await
     {
         Ok(res) => {
             let mut files: Vec<GetFilesResData> = vec![];
+            if res.status() == StatusCode::UNAUTHORIZED {
+              println!("获取文件列表失败 401");
+              let body = res.text().await.map_err(|e| format!("{}", e))?;
+              return Err(format!(
+                "401: {}", body
+              )
+              .into());
+            }
+
             if res.status().is_success() {
                 let res_json = res.json::<GetFilesRes>().await?;
 
@@ -375,7 +397,7 @@ async fn get_files(
                         for item in d {
                             if item.is_dir {
                                 // 如果是文件夹，递归获取子文件
-                                match get_files(base_url.clone(), item.path.clone(), auth.clone())
+                                match get_files(base_url.clone(), item.path.clone(),token.clone())
                                     .await
                                 {
                                     Ok(dir_files) => {
@@ -396,11 +418,12 @@ async fn get_files(
                     None => Ok(files),
                 }
             } else {
-                let status = res.status();
-                let body = res.text().await?;
-                println!("文件夹下载失败: CODE: {}, BODY: {:?}", status, body);
-                Ok(files)
+              let status = res.status();
+              let body = res.text().await?;
+              println!("文件夹下载失败: CODE: {}, BODY: {:?}", status, body);
+              Ok(files)
             }
+      
         }
         Err(err) => {
             println!("错误了: {:?}", err);
