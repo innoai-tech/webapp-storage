@@ -38,7 +38,7 @@ export interface IStatusError {
 export interface IReq<TReq, TResBody> {
   (arg: TReq, opt?: AxiosRequestConfig): Promise<TResBody>;
   _name: string;
-  getConfig(arg: TReq): { url: string; baseUrl: string };
+  getConfig(arg: TReq, hasToken: boolean): { url: string; baseUrl: string };
 }
 
 const getBaseURL = (_: string) => {
@@ -49,12 +49,16 @@ const getBaseURL = (_: string) => {
   return settingStore.host;
 };
 
-export const transOptions = (requestOpts: IRequestOpts) => {
+export const transOptions = (requestOpts: IRequestOpts, hasToken = true) => {
   const getAuthorization = useAuthorization();
 
   return {
     ...requestOpts,
-    params: Object.assign({}, requestOpts.query || {}, getAuthorization() ? { authorization: getAuthorization() } : {}),
+    params: Object.assign(
+      {},
+      requestOpts.query || {},
+      hasToken && getAuthorization() ? { authorization: getAuthorization() } : {},
+    ),
     method: requestOpts.method || "GET",
     paramsSerializer: {
       serialize: (params) => stringify(params, { arrayFormat: "repeat" }),
@@ -122,10 +126,10 @@ export function createApiInstance<TReq, TResBody>(name: string, requestOptsFromR
     });
   };
   req._name = name;
-  req.getConfig = (arg) => {
+  req.getConfig = (arg, hasToken = true) => {
     const baseURL = getBaseURL(name);
     const requestOpts = requestOptsFromReq(arg || ({} as TReq));
-    const options = transOptions(requestOpts);
+    const options = transOptions(requestOpts, hasToken);
     return {
       baseUrl: `${baseURL}${options.url}`,
       url: `${baseURL}${options.url}${options.params ? `${toSearchString(options.params)}` : ""}`,

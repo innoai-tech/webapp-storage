@@ -517,30 +517,6 @@ export const dirSearch = createApiInstance<
   },
 );
 
-export const dirShare = createApiInstance<
-  {
-    authorization?: string;
-    path: string;
-    taskCode?: string;
-    body: IObjectDirShareData;
-  },
-  IShareShareToken
->("storage.DirShare", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
-  return {
-    method: "POST",
-    url: `/api/storage/v0/objects/share`,
-    data: pBody,
-    query: {
-      authorization: pAuthorization,
-      path: pPath,
-      taskCode: pTaskCode,
-    },
-    headers: {
-      "Content-Type": "application/json",
-    },
-  };
-});
-
 export const dirStatistics = createApiInstance<
   {
     authorization?: string;
@@ -900,14 +876,6 @@ export const displayObjectDirRenameBody = (field: keyof IObjectDirRenameBody) =>
   )[field];
 };
 
-export const displayObjectDirShareData = (field: keyof IObjectDirShareData) => {
-  return (
-    {
-      expiredAt: "",
-    } as { [key: string]: string }
-  )[field];
-};
-
 export const displayObjectDirStatisticsInfo = (field: keyof IObjectDirStatisticsInfo) => {
   return (
     {
@@ -948,6 +916,16 @@ export const displayObjectObjectSearchDataList = (field: keyof IObjectObjectSear
     {
       data: "",
       total: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayObjectObjectShareData = (field: keyof IObjectObjectShareData) => {
+  return (
+    {
+      expiredAt: "",
+      isDir: "",
+      powers: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -1097,10 +1075,11 @@ export const displayOperationOperationWithOperatorName = (field: keyof IOperatio
   );
 };
 
-export const displayOperationOperatorType = (type: "ACCOUNT" | "GROUP") => {
+export const displayOperationOperatorType = (type: "ACCOUNT" | "GROUP" | "SHARE") => {
   return {
     ACCOUNT: "用户",
     GROUP: "组织",
+    SHARE: "分享",
   }[type];
 };
 
@@ -1242,6 +1221,7 @@ export const displayShare = (field: keyof IShare) => {
       {
         accountID: "",
         shareID: "组织 ID",
+        signature: "",
         state: "",
       } as { [key: string]: string }
     )[field]
@@ -1256,7 +1236,7 @@ export const displayShareLogPutShareStateBody = (field: keyof IShareLogPutShareS
   )[field];
 };
 
-export const displayShareObjectObjectDataList = (field: keyof IShareObjectObjectDataList) => {
+export const displayShareObjectDataList = (field: keyof IShareObjectDataList) => {
   return (
     {
       data: "",
@@ -1264,11 +1244,10 @@ export const displayShareObjectObjectDataList = (field: keyof IShareObjectObject
   )[field];
 };
 
-export const displaySharePower = (type: "READ" | "UPLOAD" | "DELETE") => {
+export const displaySharePower = (type: "READ" | "UPLOAD") => {
   return {
     READ: "文件读取",
     UPLOAD: "文件上传",
-    DELETE: "文件删除",
   }[type];
 };
 
@@ -1287,16 +1266,6 @@ export const displayShareShareDataList = (field: keyof IShareShareDataList) => {
     {
       data: "",
       total: "",
-    } as { [key: string]: string }
-  )[field];
-};
-
-export const displayShareShareToken = (field: keyof IShareShareToken) => {
-  return (
-    {
-      expiresIn: "",
-      shareToken: "",
-      type: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -1410,19 +1379,19 @@ export const getObject = createApiInstance<
 
 export const getShareObject = createApiInstance<
   {
-    authorization?: string;
-    path: string;
-    imageProcess?: IImageProcessProcessCondition;
+    shareID: IShareShareID;
+    signature: string;
+    path?: string;
   },
-  null
->("storage.GetShareObject", ({ authorization: pAuthorization, path: pPath, imageProcess: pImageProcess }) => {
+  IShareObjectDataList
+>("storage.GetShareObject", ({ shareID: pShareID, signature: pSignature, path: pPath }) => {
   return {
     method: "GET",
-    url: `/api/storage/v0/shares/objects/get`,
+    url: `/api/storage/v0/shares`,
     query: {
-      authorization: pAuthorization,
+      shareID: pShareID,
+      signature: pSignature,
       path: pPath,
-      imageProcess: pImageProcess,
     },
   };
 });
@@ -1879,32 +1848,6 @@ export const listShare = createApiInstance<
   },
 );
 
-export const listShareObjects = createApiInstance<
-  {
-    authorization?: string;
-    dir?: string;
-    keyword?: string;
-    onlyDir?: IDatatypesBool;
-    sort?: IUtilsDatatypesSort;
-  },
-  IShareObjectObjectDataList
->(
-  "storage.ListShareObjects",
-  ({ authorization: pAuthorization, dir: pDir, keyword: pKeyword, onlyDir: pOnlyDir, sort: pSort }) => {
-    return {
-      method: "GET",
-      url: `/api/storage/v0/shares/objects`,
-      query: {
-        authorization: pAuthorization,
-        dir: pDir,
-        keyword: pKeyword,
-        onlyDir: pOnlyDir,
-        sort: pSort,
-      },
-    };
-  },
-);
-
 export const objectRename = createApiInstance<
   {
     authorization?: string;
@@ -1922,6 +1865,30 @@ export const objectRename = createApiInstance<
       path: pPath,
       taskCode: pTaskCode,
       newpath: pNewpath,
+    },
+  };
+});
+
+export const objectShare = createApiInstance<
+  {
+    authorization?: string;
+    path: string;
+    taskCode?: string;
+    body: IObjectObjectShareData;
+  },
+  IShare
+>("storage.ObjectShare", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
+  return {
+    method: "POST",
+    url: `/api/storage/v0/objects/share`,
+    data: pBody,
+    query: {
+      authorization: pAuthorization,
+      path: pPath,
+      taskCode: pTaskCode,
+    },
+    headers: {
+      "Content-Type": "application/json",
     },
   };
 });
@@ -2370,6 +2337,44 @@ export const updateGroup = createApiInstance<
   };
 });
 
+export const uploadShareObject = createApiInstance<
+  {
+    shareID: IShareShareID;
+    signature: string;
+    path?: string;
+    "content-type": string;
+    sha256: string;
+    body: any;
+  },
+  null
+>(
+  "storage.UploadShareObject",
+  ({
+    shareID: pShareID,
+    signature: pSignature,
+    path: pPath,
+    "content-type": pContentType,
+    sha256: pSha256,
+    body: pBody,
+  }) => {
+    return {
+      method: "POST",
+      url: `/api/storage/v0/shares`,
+      data: pBody,
+      query: {
+        shareID: pShareID,
+        signature: pSignature,
+        path: pPath,
+        sha256: pSha256,
+      },
+      headers: {
+        "content-type": pContentType,
+        "Content-Type": "application/octet-stream",
+      },
+    };
+  },
+);
+
 export enum AccountState {
   ENABLE = "ENABLE",
   DISABLE = "DISABLE",
@@ -2393,6 +2398,7 @@ export enum OperationOperationType {
 export enum OperationOperatorType {
   ACCOUNT = "ACCOUNT",
   GROUP = "GROUP",
+  SHARE = "SHARE",
 }
 
 export enum RbacRoleType {
@@ -2405,7 +2411,6 @@ export enum RbacRoleType {
 export enum SharePower {
   READ = "READ",
   UPLOAD = "UPLOAD",
-  DELETE = "DELETE",
 }
 
 export enum ShareState {
@@ -2576,10 +2581,6 @@ export interface IObjectDirRenameBody {
   newPath: string;
 }
 
-export interface IObjectDirShareData {
-  expiredAt: IDatatypesTimestamp;
-}
-
 export interface IObjectDirStatisticsInfo {
   dirCount: number;
   fileCount: number;
@@ -2606,6 +2607,12 @@ export interface IObjectObjectInfo {
 export interface IObjectObjectSearchDataList {
   data: IObjectObjectInfo[];
   total: number;
+}
+
+export interface IObjectObjectShareData {
+  expiredAt: IDatatypesTimestamp;
+  isDir: IDatatypesBool;
+  powers: ISharePower[];
 }
 
 export interface IObjectObjectsCopyBody {
@@ -2731,6 +2738,7 @@ export interface IServerControllerObjectCtlObject extends IObjectObjectInfo {
 export interface IShare extends IUtilsDatatypesPrimaryID, IShareShareBase, IUtilsDatatypesCreationUpdationDeletionTime {
   accountID: IAccountAccountID;
   shareID: IShareShareID;
+  signature: string;
   state: IShareState;
 }
 
@@ -2738,7 +2746,7 @@ export interface IShareLogPutShareStateBody {
   State: IShareState;
 }
 
-export interface IShareObjectObjectDataList {
+export interface IShareObjectDataList {
   data: IObjectObjectInfo[];
 }
 
@@ -2751,12 +2759,6 @@ export interface IShareShareBase {
 export interface IShareShareDataList {
   data: IShareShareWithUser[];
   total: number;
-}
-
-export interface IShareShareToken {
-  expiresIn: number;
-  shareToken: string;
-  type: string;
 }
 
 export interface IShareShareWithUser extends IShare {

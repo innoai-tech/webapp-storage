@@ -25,7 +25,6 @@ export const useColumns = ({
     return !!logs.value?.data.length && !logs.value?.data?.filter((log) => !checkedMap.value[log.operationID])?.length;
   });
   const members = useMembersStore();
-  const memberMap = computed(() => members.members?.data?.reduce((p, c) => ({ ...p, [c.accountID]: c }), {}));
 
   const containsChecked = computed(() => Object.values(checkedMap.value).includes(true));
 
@@ -92,10 +91,20 @@ export const useColumns = ({
       title: "状态",
       key: "状态",
       dataKey: "状态",
-      width: 200,
+      width: 100,
       align: "center" as const,
       cellRenderer({ rowData }: { rowData: IOperationOperationLog }) {
         return <span>{displayOperationOperationState(rowData.state) || "-"}</span>;
+      },
+    },
+    {
+      title: "IP",
+      key: "IP",
+      dataKey: "IP",
+      width: 200,
+      align: "center" as const,
+      cellRenderer({ rowData }: { rowData: IOperationOperationLog }) {
+        return <span>{rowData.IP || "-"}</span>;
       },
     },
     {

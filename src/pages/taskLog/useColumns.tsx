@@ -1,8 +1,7 @@
 import { toFullTime } from "@src/utils/date";
-import { Button, Modal, Tooltip } from "ant-design-vue";
-import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
-import { computed, createVNode, getCurrentInstance, onMounted } from "vue";
-import { displayOperationOperationState, IOperationOperationLog } from "@src/src-clients/storage";
+import { Button, Modal } from "ant-design-vue";
+import { createVNode, getCurrentInstance } from "vue";
+import { displayOperationOperatorType, IOperationOperationWithOperatorName } from "@src/src-clients/storage";
 
 import { TextEllipsis } from "@src/components/textEllipsis";
 import { TaskLog } from "@src/pages/taskLog/taskLogDetails";
@@ -14,15 +13,29 @@ export const useColumns = () => {
       key: "operatorName",
       dataKey: "operatorName",
       width: 150,
+      cellRenderer({ rowData }: { rowData: IOperationOperationWithOperatorName }) {
+        if (!rowData.operatorName) return <TextEllipsis>{rowData.operationID}</TextEllipsis>;
+        return <TextEllipsis>{rowData.operatorName}</TextEllipsis>;
+      },
     },
     {
       title: "描述信息",
       key: "desc",
       dataKey: "desc",
       width: 500,
-      cellRenderer({ rowData }: { rowData: IOperationOperationLog }) {
+      cellRenderer({ rowData }: { rowData: IOperationOperationWithOperatorName }) {
         if (!rowData.desc) return "-";
         return <TextEllipsis>{rowData.desc}</TextEllipsis>;
+      },
+    },
+    {
+      title: "操作类型",
+      key: "operatorType",
+      dataKey: "operatorType",
+      width: 500,
+      cellRenderer({ rowData }: { rowData: IOperationOperationWithOperatorName }) {
+        if (!rowData.operatorType) return "-";
+        return displayOperationOperatorType(rowData.operatorType);
       },
     },
 
@@ -31,7 +44,7 @@ export const useColumns = () => {
       key: "createdAt",
       dataKey: "createdAt",
       width: 200,
-      cellRenderer({ rowData }: { rowData: IOperationOperationLog }) {
+      cellRenderer({ rowData }: { rowData: IOperationOperationWithOperatorName }) {
         return <span>{toFullTime(rowData.createdAt)}</span>;
       },
     },
@@ -40,7 +53,7 @@ export const useColumns = () => {
       key: "name",
       dataKey: "name",
       width: 200,
-      cellRenderer({ rowData }: { rowData: IOperationOperationLog }) {
+      cellRenderer({ rowData }: { rowData: IOperationOperationWithOperatorName }) {
         return (
           <div class={"gap-2 flex items-center"}>
             <Button

@@ -18,7 +18,7 @@ import { useTransmissionStore } from "@src/pages/transmission";
 import { Button } from "ant-design-vue";
 import { useAuth } from "@src/plugins/auth";
 import { invoke } from "@tauri-apps/api/tauri";
-
+import { open } from "@tauri-apps/api/shell";
 export const Sidenav = defineComponent({
   setup() {
     const version = ref("");
@@ -120,9 +120,9 @@ export const Sidenav = defineComponent({
             </Button>
             <span
               onClick={() => {
-                invoke("open_devtools");
+                open("https://industai.feishu.cn/docx/Ga96dPYqvokF3vxwUIpcAecgnzc");
               }}
-              class={" text-gray-500 ml-14 text-xs"}>
+              class={"cursor-pointer  text-gray-500 ml-14 text-xs"}>
               版本: {version.value}
             </span>
           </div>

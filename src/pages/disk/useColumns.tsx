@@ -295,29 +295,31 @@ export const useColumns = () => {
                           移动
                         </AuthButton>
                       </MenuItem>
-                      {rowData.isDir && (
-                        <MenuItem>
-                          <AuthButton
-                            class={"px-10 w-full"}
-                            type={"link"}
-                            hasPermission={store.roleType !== "GUEST"}
-                            onClick={() => {
-                              Modal.confirm({
-                                title: "分享文件夹",
-                                width: "40rem",
-                                icon: null,
-                                centered: true,
-                                content: createVNode(<ShareDirModal path={rowData.path} name={rowData.name} />),
-                                closable: true,
-                                cancelButtonProps: { style: { display: "none" } } as any,
-                                okButtonProps: { style: { display: "none" } } as any,
-                                wrapClassName: "confirmModal",
-                              });
-                            }}>
-                            分享
-                          </AuthButton>
-                        </MenuItem>
-                      )}
+
+                      <MenuItem>
+                        <AuthButton
+                          class={"px-10 w-full"}
+                          type={"link"}
+                          hasPermission={store.roleType !== "GUEST"}
+                          onClick={() => {
+                            Modal.confirm({
+                              title: rowData.isDir ? "分享文件夹" : "分享文件",
+                              width: "40rem",
+                              icon: null,
+                              centered: true,
+                              content: createVNode(
+                                <ShareDirModal isDir={rowData.isDir} path={rowData.path} name={rowData.name} />,
+                              ),
+                              closable: true,
+                              cancelButtonProps: { style: { display: "none" } } as any,
+                              okButtonProps: { style: { display: "none" } } as any,
+                              wrapClassName: "confirmModal",
+                            });
+                          }}>
+                          分享
+                        </AuthButton>
+                      </MenuItem>
+
                       <MenuItem>
                         <AuthButton
                           type={"link"}

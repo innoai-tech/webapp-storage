@@ -1,4 +1,4 @@
-import { IShareShareWithUser, putShareState } from "@src/src-clients/storage";
+import { IShareShareWithUser, displaySharePower, putShareState } from "@src/src-clients/storage";
 import { computed, createVNode, onMounted } from "vue";
 import { useRequest } from "vue-request";
 import { Button, message, Modal } from "ant-design-vue";
@@ -45,9 +45,18 @@ export const useColumns = () => {
       title: "状态",
       key: "accountID",
       dataKey: "accountID",
-      width: 200,
+      width: 100,
       cellRenderer({ rowData }: { rowData: IShareShareWithUser }) {
         return <span>{rowData.state === "ENABLE" ? "启用" : "禁用"}</span>;
+      },
+    },
+    {
+      title: "权限",
+      key: "powers",
+      dataKey: "powers",
+      width: 200,
+      cellRenderer({ rowData }: { rowData: IShareShareWithUser }) {
+        return <span>{rowData.powers.map((item) => `${displaySharePower(item)}`).join("、")}</span>;
       },
     },
     {
