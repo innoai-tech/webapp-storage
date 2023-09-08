@@ -207,6 +207,60 @@ export const createGroupClient = createApiInstance<
   },
 );
 
+export const createObjectShareLink = createApiInstance<
+  {
+    authorization?: string;
+    path: string;
+    taskCode?: string;
+    body: IObjectCreateObjectShareLinkData;
+  },
+  ILinkShare
+>(
+  "storage.CreateObjectShareLink",
+  ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
+    return {
+      method: "POST",
+      url: `/api/storage/v0/objects/shareLinks`,
+      data: pBody,
+      query: {
+        authorization: pAuthorization,
+        path: pPath,
+        taskCode: pTaskCode,
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+  },
+);
+
+export const createObjectUploadLink = createApiInstance<
+  {
+    authorization?: string;
+    path: string;
+    taskCode?: string;
+    body: IObjectCreateObjectUploadLinkData;
+  },
+  ILinkUpload
+>(
+  "storage.CreateObjectUploadLink",
+  ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
+    return {
+      method: "POST",
+      url: `/api/storage/v0/objects/uploadLinks`,
+      data: pBody,
+      query: {
+        authorization: pAuthorization,
+        path: pPath,
+        taskCode: pTaskCode,
+      },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+  },
+);
+
 export const createOperationTask = createApiInstance<
   {
     authorization?: string;
@@ -836,6 +890,107 @@ export const displayGroupUserGroupDataList = (field: keyof IGroupUserGroupDataLi
   )[field];
 };
 
+export const displayLinkShare = (field: keyof ILinkShare) => {
+  return (
+    displayUtilsDatatypesPrimaryID(field as any) ||
+    displayLinkShareBase(field as any) ||
+    displayUtilsDatatypesCreationUpdationDeletionTime(field as any) ||
+    (
+      {
+        accountID: "",
+        shareID: "组织 ID",
+        signature: "",
+        state: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayLinkShareBase = (field: keyof ILinkShareBase) => {
+  return (
+    {
+      expiredAt: "",
+      path: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayLinkShareDataList = (field: keyof ILinkShareDataList) => {
+  return (
+    {
+      data: "",
+      total: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayLinkShareWithUser = (field: keyof ILinkShareWithUser) => {
+  return (
+    displayLinkShare(field as any) ||
+    (
+      {
+        user: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayLinkState = (type: "ENABLE" | "DISABLE") => {
+  return {
+    ENABLE: "启用",
+    DISABLE: "禁用",
+  }[type];
+};
+
+export const displayLinkUpload = (field: keyof ILinkUpload) => {
+  return (
+    displayUtilsDatatypesPrimaryID(field as any) ||
+    displayLinkUploadBase(field as any) ||
+    displayUtilsDatatypesCreationUpdationDeletionTime(field as any) ||
+    (
+      {
+        accountID: "",
+        signature: "",
+        state: "",
+        uploadID: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayLinkUploadBase = (field: keyof ILinkUploadBase) => {
+  return (
+    {
+      expiredAt: "",
+      path: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayLinkUploadDataList = (field: keyof ILinkUploadDataList) => {
+  return (
+    {
+      data: "",
+      total: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayLinkUploadWithUser = (field: keyof ILinkUploadWithUser) => {
+  return (
+    displayLinkUpload(field as any) ||
+    (
+      {
+        user: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayLinkUser = (field: any) => {
+  return displayAccount(field as any) || ({} as { [key: string]: string })[field];
+};
+
 export const displayObjectBindDirGroupRoleBody = (field: keyof IObjectBindDirGroupRoleBody) => {
   return (
     {
@@ -848,6 +1003,24 @@ export const displayObjectBindDirUserRoleBody = (field: keyof IObjectBindDirUser
   return (
     {
       roleType: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayObjectCreateObjectShareLinkData = (field: keyof IObjectCreateObjectShareLinkData) => {
+  return (
+    {
+      expiredAt: "",
+      isDir: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayObjectCreateObjectUploadLinkData = (field: keyof IObjectCreateObjectUploadLinkData) => {
+  return (
+    {
+      expiredAt: "",
+      isDir: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -916,16 +1089,6 @@ export const displayObjectObjectSearchDataList = (field: keyof IObjectObjectSear
     {
       data: "",
       total: "",
-    } as { [key: string]: string }
-  )[field];
-};
-
-export const displayObjectObjectShareData = (field: keyof IObjectObjectShareData) => {
-  return (
-    {
-      expiredAt: "",
-      isDir: "",
-      powers: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -1212,26 +1375,21 @@ export const displayServerControllerObjectCtlObject = (field: keyof IServerContr
   );
 };
 
-export const displayShare = (field: keyof IShare) => {
-  return (
-    displayUtilsDatatypesPrimaryID(field as any) ||
-    displayShareShareBase(field as any) ||
-    displayUtilsDatatypesCreationUpdationDeletionTime(field as any) ||
-    (
-      {
-        accountID: "",
-        shareID: "组织 ID",
-        signature: "",
-        state: "",
-      } as { [key: string]: string }
-    )[field]
-  );
-};
-
-export const displayShareLogPutShareStateBody = (field: keyof IShareLogPutShareStateBody) => {
+export const displayShareLinkPutShareStateLinkBody = (field: keyof IShareLinkPutShareStateLinkBody) => {
   return (
     {
       State: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayShareObjectBase = (field: keyof IShareObjectBase) => {
+  return (
+    {
+      dir: "",
+      path: "",
+      sha256: "",
+      size: "",
     } as { [key: string]: string }
   )[field];
 };
@@ -1240,56 +1398,17 @@ export const displayShareObjectDataList = (field: keyof IShareObjectDataList) =>
   return (
     {
       data: "",
-    } as { [key: string]: string }
-  )[field];
-};
-
-export const displaySharePower = (type: "READ" | "UPLOAD") => {
-  return {
-    READ: "文件读取",
-    UPLOAD: "文件上传",
-  }[type];
-};
-
-export const displayShareShareBase = (field: keyof IShareShareBase) => {
-  return (
-    {
-      expiredAt: "",
-      path: "",
-      powers: "",
-    } as { [key: string]: string }
-  )[field];
-};
-
-export const displayShareShareDataList = (field: keyof IShareShareDataList) => {
-  return (
-    {
-      data: "",
       total: "",
     } as { [key: string]: string }
   )[field];
 };
 
-export const displayShareShareWithUser = (field: keyof IShareShareWithUser) => {
+export const displayUploadLinkPutUploadStateLinkBody = (field: keyof IUploadLinkPutUploadStateLinkBody) => {
   return (
-    displayShare(field as any) ||
-    (
-      {
-        user: "",
-      } as { [key: string]: string }
-    )[field]
-  );
-};
-
-export const displayShareState = (type: "ENABLE" | "DISABLE") => {
-  return {
-    ENABLE: "启用",
-    DISABLE: "禁用",
-  }[type];
-};
-
-export const displayShareUser = (field: any) => {
-  return displayAccount(field as any) || ({} as { [key: string]: string })[field];
+    {
+      State: "",
+    } as { [key: string]: string }
+  )[field];
 };
 
 export const displayUtilsDatatypesCreationTime = (field: keyof IUtilsDatatypesCreationTime) => {
@@ -1379,22 +1498,31 @@ export const getObject = createApiInstance<
 
 export const getShareObject = createApiInstance<
   {
-    shareID: IShareShareID;
+    shareID: ILinkShareID;
     signature: string;
     path?: string;
+    sort?: IUtilsDatatypesSort;
+    size?: number;
+    offset?: number;
   },
   IShareObjectDataList
->("storage.GetShareObject", ({ shareID: pShareID, signature: pSignature, path: pPath }) => {
-  return {
-    method: "GET",
-    url: `/api/storage/v0/shares`,
-    query: {
-      shareID: pShareID,
-      signature: pSignature,
-      path: pPath,
-    },
-  };
-});
+>(
+  "storage.GetShareObject",
+  ({ shareID: pShareID, signature: pSignature, path: pPath, sort: pSort, size: pSize, offset: pOffset }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/shares`,
+      query: {
+        shareID: pShareID,
+        signature: pSignature,
+        path: pPath,
+        sort: pSort,
+        size: pSize,
+        offset: pOffset,
+      },
+    };
+  },
+);
 
 export const listAccount = createApiInstance<
   {
@@ -1804,21 +1932,21 @@ export const listOperationLog = createApiInstance<
   },
 );
 
-export const listShare = createApiInstance<
+export const listShareLink = createApiInstance<
   {
     authorization?: string;
     accountID?: IAccountAccountID | IAccountAccountID[];
-    shareID?: IShareShareID | IShareShareID[];
+    shareID?: ILinkShareID | ILinkShareID[];
     dir?: string | string[];
-    state?: IShareState | IShareState[];
+    state?: ILinkState | ILinkState[];
     expiredAt?: IUtilsDatatypesDateTimeOrRange;
     sort?: IUtilsDatatypesSort;
     size?: number;
     offset?: number;
   },
-  IShareShareDataList
+  ILinkShareDataList
 >(
-  "storage.ListShare",
+  "storage.ListShareLink",
   ({
     authorization: pAuthorization,
     accountID: pAccountID,
@@ -1832,11 +1960,55 @@ export const listShare = createApiInstance<
   }) => {
     return {
       method: "GET",
-      url: `/api/storage/v0/share-logs`,
+      url: `/api/storage/v0/shareLinks`,
       query: {
         authorization: pAuthorization,
         accountID: pAccountID,
         shareID: pShareID,
+        dir: pDir,
+        state: pState,
+        expiredAt: pExpiredAt,
+        sort: pSort,
+        size: pSize,
+        offset: pOffset,
+      },
+    };
+  },
+);
+
+export const listUploadLink = createApiInstance<
+  {
+    authorization?: string;
+    accountID?: IAccountAccountID | IAccountAccountID[];
+    uploadID?: ILinkUploadID | ILinkUploadID[];
+    dir?: string | string[];
+    state?: ILinkState | ILinkState[];
+    expiredAt?: IUtilsDatatypesDateTimeOrRange;
+    sort?: IUtilsDatatypesSort;
+    size?: number;
+    offset?: number;
+  },
+  ILinkUploadDataList
+>(
+  "storage.ListUploadLink",
+  ({
+    authorization: pAuthorization,
+    accountID: pAccountID,
+    uploadID: pUploadID,
+    dir: pDir,
+    state: pState,
+    expiredAt: pExpiredAt,
+    sort: pSort,
+    size: pSize,
+    offset: pOffset,
+  }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/uploadLinks`,
+      query: {
+        authorization: pAuthorization,
+        accountID: pAccountID,
+        uploadID: pUploadID,
         dir: pDir,
         state: pState,
         expiredAt: pExpiredAt,
@@ -1865,30 +2037,6 @@ export const objectRename = createApiInstance<
       path: pPath,
       taskCode: pTaskCode,
       newpath: pNewpath,
-    },
-  };
-});
-
-export const objectShare = createApiInstance<
-  {
-    authorization?: string;
-    path: string;
-    taskCode?: string;
-    body: IObjectObjectShareData;
-  },
-  IShare
->("storage.ObjectShare", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
-  return {
-    method: "POST",
-    url: `/api/storage/v0/objects/share`,
-    data: pBody,
-    query: {
-      authorization: pAuthorization,
-      path: pPath,
-      taskCode: pTaskCode,
-    },
-    headers: {
-      "Content-Type": "application/json",
     },
   };
 });
@@ -2183,17 +2331,38 @@ export const putGroupClient = createApiInstance<
   },
 );
 
-export const putShareState = createApiInstance<
+export const putShareLinkState = createApiInstance<
   {
     authorization?: string;
-    shareID: IShareShareID;
-    body: IShareLogPutShareStateBody;
+    shareID: ILinkShareID;
+    body: IShareLinkPutShareStateLinkBody;
   },
   null
->("storage.PutShareState", ({ authorization: pAuthorization, shareID: pShareID, body: pBody }) => {
+>("storage.PutShareLinkState", ({ authorization: pAuthorization, shareID: pShareID, body: pBody }) => {
   return {
     method: "PUT",
-    url: `/api/storage/v0/share-logs/${pShareID}/state`,
+    url: `/api/storage/v0/shareLinks/${pShareID}/state`,
+    data: pBody,
+    query: {
+      authorization: pAuthorization,
+    },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+});
+
+export const putUploadLinkState = createApiInstance<
+  {
+    authorization?: string;
+    uploadID: ILinkUploadID;
+    body: IUploadLinkPutUploadStateLinkBody;
+  },
+  null
+>("storage.PutUploadLinkState", ({ authorization: pAuthorization, uploadID: pUploadID, body: pBody }) => {
+  return {
+    method: "PUT",
+    url: `/api/storage/v0/uploadLinks/${pUploadID}/state`,
     data: pBody,
     query: {
       authorization: pAuthorization,
@@ -2337,20 +2506,20 @@ export const updateGroup = createApiInstance<
   };
 });
 
-export const uploadShareObject = createApiInstance<
+export const uploadByLinkUpload = createApiInstance<
   {
-    shareID: IShareShareID;
+    uploadID: ILinkUploadID;
     signature: string;
-    path?: string;
+    path: string;
     "content-type": string;
-    sha256: string;
+    sha256?: string;
     body: any;
   },
   null
 >(
-  "storage.UploadShareObject",
+  "storage.UploadByLinkUpload",
   ({
-    shareID: pShareID,
+    uploadID: pUploadID,
     signature: pSignature,
     path: pPath,
     "content-type": pContentType,
@@ -2359,10 +2528,10 @@ export const uploadShareObject = createApiInstance<
   }) => {
     return {
       method: "POST",
-      url: `/api/storage/v0/shares`,
+      url: `/api/storage/v0/uploads`,
       data: pBody,
       query: {
-        shareID: pShareID,
+        uploadID: pUploadID,
         signature: pSignature,
         path: pPath,
         sha256: pSha256,
@@ -2386,6 +2555,11 @@ export enum GroupRoleType {
   MEMBER = "MEMBER",
 }
 
+export enum LinkState {
+  ENABLE = "ENABLE",
+  DISABLE = "DISABLE",
+}
+
 export enum OperationOperationState {
   DO = "DO",
   UNDO = "UNDO",
@@ -2406,16 +2580,6 @@ export enum RbacRoleType {
   ADMIN = "ADMIN",
   MEMBER = "MEMBER",
   GUEST = "GUEST",
-}
-
-export enum SharePower {
-  READ = "READ",
-  UPLOAD = "UPLOAD",
-}
-
-export enum ShareState {
-  ENABLE = "ENABLE",
-  DISABLE = "DISABLE",
 }
 
 export interface IAccount extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationUpdationDeletionTime {
@@ -2561,12 +2725,72 @@ export interface IGroupUserGroupDataList {
   total: number;
 }
 
+export interface ILinkShare
+  extends IUtilsDatatypesPrimaryID,
+    ILinkShareBase,
+    IUtilsDatatypesCreationUpdationDeletionTime {
+  accountID: IAccountAccountID;
+  shareID: ILinkShareID;
+  signature: string;
+  state: ILinkState;
+}
+
+export interface ILinkShareBase {
+  expiredAt: IDatatypesTimestamp;
+  path: string;
+}
+
+export interface ILinkShareDataList {
+  data: ILinkShareWithUser[];
+  total: number;
+}
+
+export interface ILinkShareWithUser extends ILinkShare {
+  user: ILinkUser;
+}
+
+export interface ILinkUpload
+  extends IUtilsDatatypesPrimaryID,
+    ILinkUploadBase,
+    IUtilsDatatypesCreationUpdationDeletionTime {
+  accountID: IAccountAccountID;
+  signature: string;
+  state: ILinkState;
+  uploadID: ILinkUploadID;
+}
+
+export interface ILinkUploadBase {
+  expiredAt: IDatatypesTimestamp;
+  path: string;
+}
+
+export interface ILinkUploadDataList {
+  data: ILinkUploadWithUser[];
+  total: number;
+}
+
+export interface ILinkUploadWithUser extends ILinkUpload {
+  user: ILinkUser;
+}
+
+export interface ILinkUser extends IAccount {}
+
 export interface IObjectBindDirGroupRoleBody {
   roleType: IRbacRoleType;
 }
 
 export interface IObjectBindDirUserRoleBody {
   roleType: IRbacRoleType;
+}
+
+export interface IObjectCreateObjectShareLinkData {
+  expiredAt: IDatatypesTimestamp;
+  isDir: IDatatypesBool;
+}
+
+export interface IObjectCreateObjectUploadLinkData {
+  expiredAt: IDatatypesTimestamp;
+  isDir: IDatatypesBool;
 }
 
 export interface IObjectDirCopyBody {
@@ -2607,12 +2831,6 @@ export interface IObjectObjectInfo {
 export interface IObjectObjectSearchDataList {
   data: IObjectObjectInfo[];
   total: number;
-}
-
-export interface IObjectObjectShareData {
-  expiredAt: IDatatypesTimestamp;
-  isDir: IDatatypesBool;
-  powers: ISharePower[];
 }
 
 export interface IObjectObjectsCopyBody {
@@ -2735,37 +2953,25 @@ export interface IServerControllerObjectCtlObject extends IObjectObjectInfo {
   owner?: IServerControllerObjectCtlDirOwner;
 }
 
-export interface IShare extends IUtilsDatatypesPrimaryID, IShareShareBase, IUtilsDatatypesCreationUpdationDeletionTime {
-  accountID: IAccountAccountID;
-  shareID: IShareShareID;
-  signature: string;
-  state: IShareState;
+export interface IShareLinkPutShareStateLinkBody {
+  State: ILinkState;
 }
 
-export interface IShareLogPutShareStateBody {
-  State: IShareState;
+export interface IShareObjectBase {
+  dir: IDatatypesBool;
+  path: string;
+  sha256?: string;
+  size?: number;
 }
 
 export interface IShareObjectDataList {
-  data: IObjectObjectInfo[];
-}
-
-export interface IShareShareBase {
-  expiredAt: IDatatypesTimestamp;
-  path: string;
-  powers: ISharePowers;
-}
-
-export interface IShareShareDataList {
-  data: IShareShareWithUser[];
+  data: IShareObjectBase[];
   total: number;
 }
 
-export interface IShareShareWithUser extends IShare {
-  user: IShareUser;
+export interface IUploadLinkPutUploadStateLinkBody {
+  State: ILinkState;
 }
-
-export interface IShareUser extends IAccount {}
 
 export interface IUtilsDatatypesCreationTime {
   createdAt: IDatatypesTimestamp;
@@ -2801,6 +3007,12 @@ export type IGroupRoleType = keyof typeof GroupRoleType;
 
 export type IImageProcessProcessCondition = string;
 
+export type ILinkShareID = string;
+
+export type ILinkState = keyof typeof LinkState;
+
+export type ILinkUploadID = string;
+
 export type IObjectDirID = string;
 
 export type IOperationOperationID = string;
@@ -2816,14 +3028,6 @@ export type IOperationOperatorType = keyof typeof OperationOperatorType;
 export type IOperationText = string;
 
 export type IRbacRoleType = keyof typeof RbacRoleType;
-
-export type ISharePower = keyof typeof SharePower;
-
-export type ISharePowers = ISharePower[];
-
-export type IShareShareID = string;
-
-export type IShareState = keyof typeof ShareState;
 
 export type IUtilsDatatypesDateTimeOrRange = string;
 

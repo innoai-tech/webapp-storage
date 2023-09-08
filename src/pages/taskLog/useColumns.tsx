@@ -5,6 +5,7 @@ import { displayOperationOperatorType, IOperationOperationWithOperatorName } fro
 
 import { TextEllipsis } from "@src/components/textEllipsis";
 import { TaskLog } from "@src/pages/taskLog/taskLogDetails";
+import { Text } from "@src/components/Text";
 
 export const useColumns = () => {
   return [
@@ -25,7 +26,7 @@ export const useColumns = () => {
       width: 500,
       cellRenderer({ rowData }: { rowData: IOperationOperationWithOperatorName }) {
         if (!rowData.desc) return "-";
-        return <TextEllipsis>{rowData.desc}</TextEllipsis>;
+        return <Text text={rowData.desc}></Text>;
       },
     },
     {

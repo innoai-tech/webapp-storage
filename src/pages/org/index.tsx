@@ -31,7 +31,7 @@ export const Org = defineComponent({
     });
     return () => {
       return (
-        <div class={"flex flex-1 flex-col"}>
+        <div class={"flex flex-1 flex-col h-full"}>
           <Tabs
             class={"flex flex-1 flex-col"}
             activeKey={tabStore.tab}

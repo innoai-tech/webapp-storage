@@ -1,14 +1,12 @@
 use crate::data_store::{DOWNLOAD_COMPLETE_STORE, DOWNLOAD_PROGRESS_STORE};
-use crate::queue::{refresh_token,DOWNLOAD_CONCURRENT_QUEUE, AUTH_TOKEN};
+use crate::queue::{refresh_token, AUTH_TOKEN, CLIENT_RETRY, DOWNLOAD_CONCURRENT_QUEUE};
 use async_recursion::async_recursion;
 use chrono::{Local, SecondsFormat};
 use futures_util::StreamExt;
 use pathdiff::diff_paths;
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
-use reqwest_middleware::ClientBuilder;
-use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
-use std::fs;
 use reqwest::StatusCode;
+use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
@@ -42,7 +40,7 @@ pub async fn download_core(
     task_id: Option<String>,                 // 任务ID
     window: tauri::Window,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let auth_token = AUTH_TOKEN.lock().unwrap();
+    let auth_token = AUTH_TOKEN.read().unwrap();
     const FRAGMENT: &AsciiSet = &CONTROLS
         .add(b' ')
         .add(b'"')
@@ -56,7 +54,10 @@ pub async fn download_core(
         Some(id) => {
             match Url::parse_with_params(
                 &utf8_percent_encode(&url.clone(), FRAGMENT).to_string(),
-                &[("authorization", auth_token.clone().to_string()),("taskCode", id)],
+                &[
+                    ("authorization", auth_token.clone().to_string()),
+                    ("taskCode", id),
+                ],
             ) {
                 Ok(url) => url,
                 Err(e) => {
@@ -92,11 +93,7 @@ pub async fn download_core(
     let file_path = Path::new(&local_path).join(file_tmp_name);
 
     // 发送 GET 请求，获取文件内容
-    let res = match reqwest::Client::new()
-        .get(url)
-        .send()
-        .await
-    {
+    let res = match CLIENT_RETRY.get(url).send().await {
         Ok(res) => res,
         Err(e) => {
             return Err(Box::new(e));
@@ -104,14 +101,10 @@ pub async fn download_core(
     };
 
     if res.status() == StatusCode::UNAUTHORIZED {
-      refresh_token(&window);
-      let body = res.text().await.map_err(|e| format!("{}", e))?;
-      return Err(format!(
-        "401: {}", body
-      )
-      .into());
+        refresh_token(&window);
+        let body = res.text().await.map_err(|e| format!("{}", e))?;
+        return Err(format!("401: {}", body).into());
     }
-
 
     // 判断响应状态码是否为成功状态
     if !res.status().is_success() {
@@ -162,8 +155,10 @@ pub async fn download_core(
         Ok(res) => res,
         Err(e) => println!("Error 重命名文件失败: {}", e),
     }
+    println!("drop");
+    drop(file);
+    drop(stream);
 
-    println!("下载已成功");
     Ok(())
 }
 
@@ -187,7 +182,7 @@ pub async fn download(
             current_downloaded_size.clone(),
             total_size.clone(),
             task_id.clone(),
-            window.clone()
+            window.clone(),
         )
         .await
         {
@@ -224,9 +219,15 @@ pub async fn download_dir(
     window: tauri::Window,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 读取 token
-    let auth_token_str = AUTH_TOKEN.lock().unwrap();
+    let auth_token_str = AUTH_TOKEN.read().unwrap();
     // 获取文件列表
-    let files = get_files(get_files_base_url.clone(), dir_path.clone(),auth_token_str.clone()).await?;
+    let files = get_files(
+        get_files_base_url.clone(),
+        dir_path.clone(),
+        auth_token_str.clone(),
+    )
+    .await?;
+
     println!("文件内容：{:?}", files.len());
     if files.len() == 0 {
         return Err("文件夹内没有任何文件".into());
@@ -289,45 +290,49 @@ pub async fn download_dir(
         let task_id = task_id.clone();
         let _window = window.clone();
         let _auth_token_str = auth_token_str.clone();
-        DOWNLOAD_CONCURRENT_QUEUE.push(
-            move || {
-                let rt = tokio::runtime::Runtime::new().unwrap();
-                rt.block_on(async {
-                    match download(
-                        url,
-                        local_path,
-                        file_name,
-                        id.clone(),
-                        downloaded_size.clone(),
-                        files_total_size,
-                        Some(task_id),
-                        _window.clone()
-                    )
-                    .await
-                    {
-                        Ok(_) => {
-                          // 失败的时候判断一下下载完了吗，下载完了就结束，没下载完插入一个错误信息
-                          let count = downloaded_file_count.fetch_add(1, Ordering::Relaxed);
-                          let total = total_file_count.load(Ordering::Relaxed);
-                          // 获取count的是 +1 前的值，所以手动 +1添加当前任务，判断一下是否都下载完毕了，如果是 0 代表没有文件也当做下完了
-                          if total == 0 || total == count + 1 {
-                            DOWNLOAD_COMPLETE_STORE
-                            .lock()
-                            .unwrap()
-                            .add(id.clone(), None);
+        DOWNLOAD_CONCURRENT_QUEUE
+            .push(
+                move || {
+                    let rt = tokio::runtime::Runtime::new().unwrap();
 
-                        }
-                      }
-                      Err(err) => {
-                          return Err(err);
-                        }
-                    };
-                    Ok(())
-                });
-            },
-            _id.clone(),
-        );
+                    rt.block_on(async {
+                        match download(
+                            url,
+                            local_path,
+                            file_name,
+                            id.clone(),
+                            downloaded_size.clone(),
+                            files_total_size,
+                            Some(task_id),
+                            _window.clone(),
+                        )
+                        .await
+                        {
+                            Ok(_) => {
+                                // 判断一下下载完了吗，下载完了就结束，没下载完插入一个错误信息
+                                let count = downloaded_file_count.fetch_add(1, Ordering::Relaxed);
+                                let total = total_file_count.load(Ordering::Relaxed);
+                                // 获取count的是 +1 前的值，所以手动 +1添加当前任务，判断一下是否都下载完毕了，如果是 0 代表没有文件也当做下完了
+                                println!("当前:{:?},总共:{:?}", count + 1, total);
+                                if total == 0 || total == count + 1 {
+                                    DOWNLOAD_COMPLETE_STORE
+                                        .lock()
+                                        .unwrap()
+                                        .add(id.clone(), None);
+                                }
+                            }
+                            Err(err) => {
+                                return Err(err);
+                            }
+                        };
+                        Ok(())
+                    });
+                },
+                _id.clone(),
+            )
+            .await;
     }
+
     Ok(())
 }
 
@@ -353,40 +358,29 @@ async fn get_files(
 ) -> Result<Vec<GetFilesResData>, Box<dyn std::error::Error>> {
     let base_url = url.clone();
     let url = match Url::parse_with_params(
-      &url.clone(),
-      &[("authorization",token.clone().to_string()),("size", "-1".to_string()), ("path", path.clone())],
+        &url.clone(),
+        &[
+            ("authorization", token.clone().to_string()),
+            ("size", "-1".to_string()),
+            ("path", path.clone()),
+        ],
     ) {
-      Ok(url) => url.to_string(),
-      Err(err) => return Err(err.into()),
+        Ok(url) => url.to_string(),
+        Err(err) => return Err(err.into()),
     };
-    
-    // 支持重试
-    let retry_policy = ExponentialBackoff {
-      max_n_retries: 1,
-      max_retry_interval: std::time::Duration::from_millis(12000),
-      min_retry_interval: std::time::Duration::from_millis(3000),
-      backoff_exponent: 2,
-    };
-    
-    let client = ClientBuilder::new(reqwest::Client::new())
-    .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-    .build();
-  
-    match client
-    .get(url)
-    .timeout(Duration::from_secs(300))
-    .send()
-    .await
+
+    match CLIENT_RETRY
+        .get(url)
+        .timeout(Duration::from_secs(300))
+        .send()
+        .await
     {
         Ok(res) => {
             let mut files: Vec<GetFilesResData> = vec![];
             if res.status() == StatusCode::UNAUTHORIZED {
-              println!("获取文件列表失败 401");
-              let body = res.text().await.map_err(|e| format!("{}", e))?;
-              return Err(format!(
-                "401: {}", body
-              )
-              .into());
+                println!("获取文件列表失败 401");
+                let body = res.text().await.map_err(|e| format!("{}", e))?;
+                return Err(format!("401: {}", body).into());
             }
 
             if res.status().is_success() {
@@ -397,7 +391,7 @@ async fn get_files(
                         for item in d {
                             if item.is_dir {
                                 // 如果是文件夹，递归获取子文件
-                                match get_files(base_url.clone(), item.path.clone(),token.clone())
+                                match get_files(base_url.clone(), item.path.clone(), token.clone())
                                     .await
                                 {
                                     Ok(dir_files) => {
@@ -418,12 +412,11 @@ async fn get_files(
                     None => Ok(files),
                 }
             } else {
-              let status = res.status();
-              let body = res.text().await?;
-              println!("文件夹下载失败: CODE: {}, BODY: {:?}", status, body);
-              Ok(files)
+                let status = res.status();
+                let body = res.text().await?;
+                println!("文件夹下载失败: CODE: {}, BODY: {:?}", status, body);
+                Ok(files)
             }
-      
         }
         Err(err) => {
             println!("错误了: {:?}", err);
@@ -444,24 +437,14 @@ pub struct CreateTaskReq {
 }
 #[async_recursion]
 pub async fn create_task(url: String, auth: String, desc: String) -> Result<String, Box<MyError>> {
-    // 支持重试
-    let retry_policy = ExponentialBackoff {
-        max_n_retries: 3,
-        max_retry_interval: std::time::Duration::from_millis(10000),
-        min_retry_interval: std::time::Duration::from_millis(3000),
-        backoff_exponent: 2,
-    };
-
     let req_body = CreateTaskReq {
         desc: format!("{}", desc),
     };
-    let client = ClientBuilder::new(reqwest::Client::new())
-        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-        .build();
+
     let err = MyError {
         message: format!("创建任务失败"),
     };
-    match client
+    match CLIENT_RETRY
         .post(url)
         .timeout(Duration::from_secs(300))
         .bearer_auth(auth.clone())

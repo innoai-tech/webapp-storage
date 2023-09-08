@@ -1,18 +1,22 @@
-import { IShareShareWithUser, displaySharePower, putShareState } from "@src/src-clients/storage";
+import { ILinkUploadWithUser, putUploadLinkState, uploadByLinkUpload } from "@src/src-clients/storage";
 import { computed, createVNode, onMounted } from "vue";
 import { useRequest } from "vue-request";
 import { Button, message, Modal } from "ant-design-vue";
 import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
 import { toFullTime } from "@src/utils/date";
-import { useListShareStore } from "@src/pages/share";
 import { useMembersStore } from "@src/pages/member";
 import { useCurrentAccountStore } from "@src/pages/account";
+import { writeText } from "@tauri-apps/api/clipboard";
+import dayjs from "dayjs";
+import { useListUploadStore } from "@src/pages/share/UploadList";
+import { Text } from "@src/components/Text";
+
 export const useColumns = () => {
-  const shareStore = useListShareStore();
-  const { run: sharePutState } = useRequest(putShareState, {
+  const shareStore = useListUploadStore();
+  const { run: sharePutState } = useRequest(putUploadLinkState, {
     manual: true,
     onSuccess() {
-      message.success("已停止分享");
+      message.success("操作已成功");
       shareStore.refresh();
     },
   });
@@ -31,13 +35,16 @@ export const useColumns = () => {
       key: "path",
       dataKey: "path",
       width: 200,
+      cellRenderer({ rowData }: { rowData: ILinkUploadWithUser }) {
+        return <Text text={rowData.path || "-"}>{}</Text>;
+      },
     },
     {
       title: "分享人",
       key: "accountID",
       dataKey: "accountID",
       width: 200,
-      cellRenderer({ rowData }: { rowData: IShareShareWithUser }) {
+      cellRenderer({ rowData }: { rowData: ILinkUploadWithUser }) {
         return <span>{memberMap.value?.[rowData.accountID] || "-"}</span>;
       },
     },
@@ -46,25 +53,17 @@ export const useColumns = () => {
       key: "accountID",
       dataKey: "accountID",
       width: 100,
-      cellRenderer({ rowData }: { rowData: IShareShareWithUser }) {
+      cellRenderer({ rowData }: { rowData: ILinkUploadWithUser }) {
         return <span>{rowData.state === "ENABLE" ? "启用" : "禁用"}</span>;
       },
     },
-    {
-      title: "权限",
-      key: "powers",
-      dataKey: "powers",
-      width: 200,
-      cellRenderer({ rowData }: { rowData: IShareShareWithUser }) {
-        return <span>{rowData.powers.map((item) => `${displaySharePower(item)}`).join("、")}</span>;
-      },
-    },
+
     {
       title: "创建时间",
       key: "createdAt",
       dataKey: "createdAt",
       width: 200,
-      cellRenderer({ rowData }: { rowData: IShareShareWithUser }) {
+      cellRenderer({ rowData }: { rowData: ILinkUploadWithUser }) {
         return <span>{toFullTime(rowData.createdAt) || "-"}</span>;
       },
     },
@@ -73,7 +72,7 @@ export const useColumns = () => {
       key: "expiredAt",
       dataKey: "expiredAt",
       width: 200,
-      cellRenderer({ rowData }: { rowData: IShareShareWithUser }) {
+      cellRenderer({ rowData }: { rowData: ILinkUploadWithUser }) {
         return <span>{toFullTime(rowData.expiredAt) || "-"}</span>;
       },
     },
@@ -83,22 +82,22 @@ export const useColumns = () => {
       key: "shareID",
       dataKey: "shareID",
       width: 200,
-      cellRenderer({ rowData }: { rowData: IShareShareWithUser }) {
+      cellRenderer({ rowData }: { rowData: ILinkUploadWithUser }) {
         return (
-          <div class={"flex"}>
+          <div class={"flex gap-4"}>
             <Button
               type={"link"}
               danger={rowData.state === "ENABLE"}
               onClick={() => {
                 Modal.confirm({
-                  title: `是否确定${rowData.state === "ENABLE" ? "禁用" : "启用"}当前文件夹的分享`,
+                  title: `是否确定${rowData.state === "ENABLE" ? "禁用" : "启用"}当前文件夹的上传`,
                   centered: true,
                   closable: true,
                   content: null,
                   icon: createVNode(ExclamationCircleOutlined),
                   onOk() {
                     return sharePutState({
-                      shareID: rowData.shareID,
+                      uploadID: rowData.uploadID,
                       body: {
                         State: rowData.state === "ENABLE" ? "DISABLE" : "ENABLE",
                       },
@@ -113,6 +112,23 @@ export const useColumns = () => {
                 });
               }}>
               {rowData.state === "ENABLE" ? "禁用" : "启用"}
+            </Button>
+            <Button
+              type={"link"}
+              onClick={() => {
+                const url = `${
+                  uploadByLinkUpload.getConfig(
+                    {
+                      signature: rowData.signature,
+                      uploadID: rowData.uploadID,
+                    } as any,
+                    false,
+                  ).url
+                }&expiredAt=${dayjs(rowData.expiredAt).toISOString()}`;
+                writeText(url);
+                message.success("复制成功");
+              }}>
+              复制链接
             </Button>
           </div>
         );

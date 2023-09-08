@@ -109,10 +109,9 @@ export const UploadModal = defineComponent({
                           id: file.id,
                         })),
                       ),
-                    }).then(() => {
-                      message.success("文件已开始上传");
-                      Modal.destroyAll();
                     });
+                    message.success("文件已开始上传");
+                    Modal.destroyAll();
                   } else {
                     const _path = Array.isArray(path) ? path[0] : path;
                     //   单文件上传
@@ -141,10 +140,9 @@ export const UploadModal = defineComponent({
                       originPath: filePath,
                       localPath: _path,
                       id,
-                    }).then(() => {
-                      message.success("文件已开始上传");
-                      Modal.destroyAll();
                     });
+                    message.success("文件已开始上传");
+                    Modal.destroyAll();
                   }
                 } else {
                   // 文件夹上传
@@ -174,23 +172,22 @@ export const UploadModal = defineComponent({
                         taskId: res.taskCode,
                         originPath: newDirPath,
                         id,
-                      }).then(() => {
-                        transmissionStore.setUpload(
-                          [
-                            {
-                              id,
-                              path: newDirPath,
-                              type: "UPLOAD",
-                              size: 0,
-                              name: dirName,
-                              progress: 0,
-                              created: dayjs().format("YYYY-MM-DD HH:mm"),
-                            } as ITransmission,
-                          ].concat(transmissionStore.uploadList),
-                        );
-                        Modal.destroyAll();
-                        message.success("文件夹已开始上传");
                       });
+                      transmissionStore.setUpload(
+                        [
+                          {
+                            id,
+                            path: newDirPath,
+                            type: "UPLOAD",
+                            size: 0,
+                            name: dirName,
+                            progress: 0,
+                            created: dayjs().format("YYYY-MM-DD HH:mm"),
+                          } as ITransmission,
+                        ].concat(transmissionStore.uploadList),
+                      );
+                      Modal.destroyAll();
+                      message.success("文件夹已开始上传");
                     },
                     () => {
                       message.warn("上传文件夹失败，请稍后再试");

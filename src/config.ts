@@ -31,9 +31,9 @@ export const APP_CONFIG = {
   //后端请求地址
   SRV_STORAGE: () => {
     // @ts-ignore
-    // if ((import.meta as any).env.PROD) {
-    //   return "https://storage.dev.innoai.tech";
-    // }
+    if ((import.meta as any).env.PROD) {
+      return "https://storage.dev.innoai.tech";
+    }
     return "http://172.20.30.92:8090";
   },
 };

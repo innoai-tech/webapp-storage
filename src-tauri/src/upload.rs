@@ -1,11 +1,14 @@
 use crate::crypto::get_sha256;
 use crate::data_store::UPLOAD_PROGRESS_STORE;
+use crate::queue::{refresh_token, AUTH_TOKEN};
 use chrono::{Local, SecondsFormat};
 use futures_util::StreamExt;
-use crate::queue::{AUTH_TOKEN,refresh_token};
 use mime_guess::from_path;
-use reqwest_middleware::ClientBuilder;
+use reqwest::StatusCode;
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use std::error::Error;
+use std::fmt;
 use std::fs::metadata;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -13,9 +16,7 @@ use std::time::Duration;
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 use url::Url;
-use reqwest::StatusCode;
-use std::error::Error;
-use std::fmt;
+
 #[derive(Debug)]
 struct CustomError {
     status: StatusCode,
@@ -29,7 +30,6 @@ impl fmt::Display for CustomError {
         write!(f, "CustomError: {} - {}", self.status, self.message)
     }
 }
-
 
 // 定义上传函数
 pub async fn upload_core(
@@ -52,14 +52,7 @@ pub async fn upload_core(
     task_id: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 读取 token
-    let auth_token_str = AUTH_TOKEN.lock().unwrap();
-    // 支持重试
-    let retry_policy = ExponentialBackoff {
-        max_n_retries: 2,
-        max_retry_interval: std::time::Duration::from_millis(10000),
-        min_retry_interval: std::time::Duration::from_millis(3000),
-        backoff_exponent: 2,
-    };
+    let auth_token_str = AUTH_TOKEN.read().unwrap();
 
     let _window = window.clone();
     // 克隆文件ID
@@ -103,6 +96,17 @@ pub async fn upload_core(
         Box::new(e)
     })?;
 
+    // 支持重试
+    let retry_policy = ExponentialBackoff {
+        max_n_retries: 2,
+        max_retry_interval: std::time::Duration::from_millis(10000),
+        min_retry_interval: std::time::Duration::from_millis(3000),
+        backoff_exponent: 2,
+    };
+    let client_retry = ClientBuilder::new(reqwest::Client::new())
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
+
     // 拼接检查对象是否存在的URL
     let check_object_url = match Url::parse_with_params(
         &check_object_url.clone(),
@@ -121,9 +125,7 @@ pub async fn upload_core(
     };
 
     // 发送检查请求，添加一个重试机制
-    let res = match ClientBuilder::new(reqwest::Client::new())
-        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-        .build()
+    let res = match client_retry
         .get(check_object_url)
         .timeout(Duration::from_secs(300))
         .bearer_auth(auth_token_str.clone().to_string())
@@ -132,27 +134,26 @@ pub async fn upload_core(
     {
         Ok(res) => res,
         Err(e) => {
-            eprintln!("检查 SHA256 请求失败: {:?}",  e);
+            eprintln!("检查 SHA256 请求失败: {:?}", e);
+            drop(client_retry);
             return Err(Box::new(e));
         }
     };
     if res.status() == StatusCode::UNAUTHORIZED {
-      refresh_token(&window);
-      let error = CustomError {
-        status: res.status(),
-        message: format!("401: {:?}", local_path.clone()),
-      };
-      return Err(Box::new(error));
+        refresh_token(&window);
+        let error = CustomError {
+            status: res.status(),
+            message: format!("401: {:?}", local_path.clone()),
+        };
+
+        drop(client_retry);
+        return Err(Box::new(error));
     }
-
-
 
     // 如果返回码为200，则表示该对象已经存在，则直接做秒传处理
     if res.status().is_success() {
         // 发送上传请求
-        match ClientBuilder::new(reqwest::Client::new())
-            .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-            .build()
+        match client_retry
             .post(url.as_str().clone())
             .timeout(Duration::from_secs(300))
             .bearer_auth(auth_token_str.clone().to_string())
@@ -161,6 +162,7 @@ pub async fn upload_core(
             .await
         {
             Ok(res) => {
+                drop(client_retry);
                 if res.status().is_success() || res.status() == 400 {
                     return Ok(());
                 } else {
@@ -178,11 +180,14 @@ pub async fn upload_core(
                 }
             }
             Err(e) => {
+                drop(client_retry);
                 return Err(Box::new(e));
             }
         }
     }
 
+    // 上传客户端，目前重试无法充实上传文件，所以这里不重试
+    let client = reqwest::Client::new();
     // 目前发现接口响应错误后，文件流依旧读取记录导致进度不正确，这里处理一下，有响应就关掉 state 停止读取
     let read_file_state = Arc::new(AtomicU64::new(1));
     // 存储一下一共上传的进度，如果上传失败，就把总进度减去这部分进度
@@ -235,6 +240,7 @@ pub async fn upload_core(
         // 更新一下前端进度
         let total = total_len.load(Ordering::Relaxed);
         let new_len = uploaded_len.load(Ordering::Relaxed);
+
         UPLOAD_PROGRESS_STORE.lock().unwrap().add(
             id.clone(),
             Some(new_len as f32 / total.clone() as f32),
@@ -243,7 +249,7 @@ pub async fn upload_core(
     };
 
     // 发送上传请求
-    match reqwest::Client::new()
+    let _ = match client
         .post(url.as_str())
         .bearer_auth(auth_token_str.clone().to_string())
         .header("content-type", "application/octet-stream")
@@ -252,8 +258,8 @@ pub async fn upload_core(
         .await
     {
         Ok(res) => {
+            drop(client);
             reset_upload_len();
-
             if res.status().is_success() || res.status() == 400 {
                 return Ok(());
             } else {
@@ -272,10 +278,11 @@ pub async fn upload_core(
             }
         }
         Err(e) => {
+            drop(client);
             reset_upload_len();
             return Err(Box::new(e));
         }
-    }
+    };
 }
 
 pub async fn upload(
@@ -338,7 +345,8 @@ pub async fn upload(
                 if retry_count < 3 {
                     retry_count += 1;
                     let timestamp = Local::now().to_rfc3339_opts(SecondsFormat::Secs, true);
-                    let delay_ms: u64 = retry_count.pow(retry_count.try_into().unwrap()) * 1000 + 2000;
+                    let delay_ms: u64 =
+                        retry_count.pow(retry_count.try_into().unwrap()) * 1000 + 2000;
                     tokio::time::sleep(Duration::from_millis(delay_ms)).await;
                     println!("上传失败重试中... ({}/3), {}", retry_count, timestamp);
                 } else {

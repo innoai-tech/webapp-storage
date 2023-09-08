@@ -74,7 +74,7 @@ export const Sidenav = defineComponent({
         },
         {
           icon: <ShareAltOutlined />,
-          label: "分享管理",
+          label: "链接管理",
           key: "share",
         },
         {

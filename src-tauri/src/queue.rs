@@ -3,6 +3,9 @@ use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 type Task = Box<dyn FnOnce() + Send>;
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use tokio::sync::Semaphore;
 // 任务信息枚举类型，包括任务和终止信息
 pub struct ConcurrentQueue {
     sender: Arc<Mutex<Sender<(Task, String)>>>,
@@ -11,25 +14,25 @@ pub struct ConcurrentQueue {
 lazy_static::lazy_static! {
   pub static ref INVALID_IDS: Arc<RwLock<HashSet<String>>> = Arc::new(RwLock::new(HashSet::new()));
   pub static ref REFRESH_AUTH_TOKEN_URL: Mutex<String> = Mutex::new(String::from(""));
-  pub static ref AUTH_TOKEN: Mutex<String> = Mutex::new(String::from(""));
+  pub static ref AUTH_TOKEN: Arc<RwLock<String>> = Arc::new(RwLock::new(String::from("")));
   pub static ref GET_AUTH_TOKEN_LOADING: Mutex<bool> = Mutex::new(false);
+  pub static ref QUEUE_PERMIT: Arc<Semaphore> = Arc::new(Semaphore::new(15));
 }
 
 pub fn refresh_token(window: &tauri::Window) {
-  let mut lock = GET_AUTH_TOKEN_LOADING.lock().unwrap(); // 获取读锁
-  if *lock {
-    return;
-  }
-  *lock = true;
-  match window.emit("tauri://refresh_token", "") {
-    Ok(res) => {
-      println!("EMIT RES: {:?}", res);
-
-    },
-    Err(err) => {
-      println!("EMIT ERR: {:?}", err);
+    let mut lock = GET_AUTH_TOKEN_LOADING.lock().unwrap(); // 获取读锁
+    if *lock {
+        return;
     }
-  }
+    *lock = true;
+    match window.emit("tauri://refresh_token", "") {
+        Ok(res) => {
+            println!("EMIT RES: {:?}", res);
+        }
+        Err(err) => {
+            println!("EMIT ERR: {:?}", err);
+        }
+    }
 }
 
 impl ConcurrentQueue {
@@ -40,18 +43,8 @@ impl ConcurrentQueue {
         for _ in 0..concurrency {
             let receiver = receiver.clone();
             thread::spawn(move || loop {
-                let invalid_ids = INVALID_IDS.clone();
                 let msg = receiver.lock().unwrap().recv().unwrap();
                 let (task, task_id) = msg;
-
-                let task_invalid_ids = invalid_ids.read().unwrap().clone();
-                if task_invalid_ids.contains(&task_id) {
-                    continue;
-                }
-                // // 检查 AUTH_TOKEN 是否为空，如果为空则挂起当前线程
-                while *GET_AUTH_TOKEN_LOADING.lock().unwrap() {
-                  thread::sleep(std::time::Duration::from_secs(1));
-                }
 
                 task();
             });
@@ -62,9 +55,20 @@ impl ConcurrentQueue {
     }
 
     // 将任务加入队列
-    pub fn push<T: FnOnce() + Send + 'static>(&self, task: T, task_id: String) {
-        let task = Box::new(task);
-        let _ = self.sender.lock().unwrap().send((task, task_id));
+    pub async fn push<T: FnOnce() + Send + 'static>(&self, task: T, task_id: String) {
+        let semaphore_permit = QUEUE_PERMIT.acquire().await.unwrap();
+        let id = task_id.clone();
+        let task = Box::new(move || {
+            let invalid_ids = INVALID_IDS.clone();
+
+            let task_invalid_ids = invalid_ids.read().unwrap().clone();
+            println!("准备执行任务");
+            if task_invalid_ids.contains(&id) == false {
+                task();
+            }
+            drop(semaphore_permit);
+        });
+        self.sender.lock().unwrap().send((task, task_id));
     }
 
     // 停止并发队列
@@ -85,9 +89,24 @@ impl ConcurrentQueue {
         }
     }
 }
-// 创建一个下载并发队列和一个上传并发队列
-// 这里使用了懒加载宏，确保只有在需要使用的时候才会创建队列
+
 lazy_static::lazy_static! {
-    pub static ref DOWNLOAD_CONCURRENT_QUEUE: Arc<ConcurrentQueue> = Arc::new(ConcurrentQueue::new(10));
-    pub static ref UPLOAD_CONCURRENT_QUEUE: Arc<ConcurrentQueue> = Arc::new(ConcurrentQueue::new(10));
+    pub static ref DOWNLOAD_CONCURRENT_QUEUE: Arc<ConcurrentQueue> = Arc::new(ConcurrentQueue::new(15));
+    pub static ref UPLOAD_CONCURRENT_QUEUE: Arc<ConcurrentQueue> = Arc::new(ConcurrentQueue::new(15));
+    pub static ref CLIENT: ClientWithMiddleware = {
+      let client = ClientBuilder::new(reqwest::Client::new()).build();
+      client
+    };
+    pub static ref CLIENT_RETRY: ClientWithMiddleware = {
+       // 支持重试
+      let retry_policy = ExponentialBackoff {
+        max_n_retries: 2,
+        max_retry_interval: std::time::Duration::from_millis(10000),
+        min_retry_interval: std::time::Duration::from_millis(3000),
+        backoff_exponent: 2,
+      };
+      let client = ClientBuilder::new(reqwest::Client::new()).with(RetryTransientMiddleware::new_with_policy(retry_policy))
+      .build();
+      client
+    };
 }

@@ -70,7 +70,7 @@ export const routes = [
             component: Share,
             name: "share",
             children: [],
-            meta: { title: "分享管理" },
+            meta: { title: "链接管理" },
           },
           {
             path: "setting",

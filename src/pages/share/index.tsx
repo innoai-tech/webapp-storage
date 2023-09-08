@@ -1,42 +1,29 @@
-import { computed, defineComponent, onMounted, ref } from "vue";
-import { useRequest } from "vue-request";
-import { defineStore } from "pinia";
-import { listShare } from "@src/src-clients/storage";
-import { Table } from "@src/components/table";
-import { useColumns } from "@src/pages/share/useColumns";
-
-export const useListShareStore = defineStore("listShare", () => {
-  const {
-    data: shares,
-    refresh,
-    runAsync,
-  } = useRequest(() => listShare({ size: -1 }), {
-    refreshOnWindowFocus: true,
-    manual: true,
-  });
-  return {
-    shares,
-    refresh,
-    getMembers: runAsync,
-  };
-});
+import { defineComponent, ref } from "vue";
+import { TabPane, Tabs } from "ant-design-vue";
+import { ShareList } from "@src/pages/share/ShareList";
+import { UploadList } from "@src/pages/share/UploadList";
 
 export const Share = defineComponent({
   setup() {
-    const shareStore = useListShareStore();
-
-    const data = computed(() => shareStore.shares?.data || []);
-
-    const columns = useColumns();
-
-    onMounted(() => {
-      shareStore.getMembers();
-    });
+    const currentTable = ref<"SHARE" | "UPLOAD">("SHARE");
 
     return () => {
       return (
-        <div class={"flex flex-1 flex-col"}>
-          <Table rowKey={"accountID"} columns={columns} data={data?.value || []} />
+        <div class={"flex flex-1 flex-col h-full"}>
+          <Tabs
+            class={"flex flex-1 flex-col"}
+            activeKey={currentTable.value}
+            destroyInactiveTabPane={true}
+            onChange={(tab) => {
+              currentTable.value = tab as any;
+            }}>
+            <TabPane key={"SHARE"} tab={"分享链接"}>
+              <ShareList />
+            </TabPane>
+            <TabPane key={"UPLOAD"} tab={"上传链接"}>
+              <UploadList />
+            </TabPane>
+          </Tabs>
         </div>
       );
     };

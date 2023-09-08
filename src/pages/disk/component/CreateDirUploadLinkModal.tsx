@@ -1,13 +1,18 @@
 import { defineComponent, ref } from "vue";
 import { Button, DatePicker, Form, FormItem, message, Modal, Tooltip } from "ant-design-vue";
 import { useRequest } from "vue-request";
-import { getShareObject, createObjectShareLink } from "@src/src-clients/storage";
+import {
+  getShareObject,
+  createObjectShareLink,
+  createObjectUploadLink,
+  uploadByLinkUpload,
+} from "@src/src-clients/storage";
 import { toFullTime } from "@src/utils/date";
 import { CopyOutlined } from "@ant-design/icons-vue";
 import { writeText } from "@tauri-apps/api/clipboard";
 import dayjs, { Dayjs } from "dayjs";
 
-export const ShareDirModal = defineComponent({
+export const CreateDirUploadLinkModal = defineComponent({
   props: {
     path: {
       required: true,
@@ -29,14 +34,8 @@ export const ShareDirModal = defineComponent({
 
     const loading = ref(false);
     const shareUrl = ref("");
-    // const authOptions = computed(() =>
-    //   Object.keys(SharePower).map((key: unknown) => ({
-    //     value: key as string,
-    //     label: displaySharePower(key as ISharePower),
-    //   })),
-    // );
 
-    const { runAsync: share } = useRequest(createObjectShareLink, {
+    const { runAsync: createUploadLink } = useRequest(createObjectUploadLink, {
       manual: true,
     });
 
@@ -61,8 +60,7 @@ export const ShareDirModal = defineComponent({
                 return;
               }
               loading.value = true;
-
-              share({
+              createUploadLink({
                 path: props.path,
                 body: {
                   isDir: props.isDir,
@@ -71,16 +69,15 @@ export const ShareDirModal = defineComponent({
               })
                 .then((res) => {
                   shareUrl.value = `${
-                    getShareObject.getConfig(
+                    uploadByLinkUpload.getConfig(
                       {
+                        uploadID: res.uploadID,
                         signature: res.signature,
-                        shareID: res.shareID,
-                        path: props.isDir ? undefined : `/${props.name}`,
-                      },
+                      } as any,
                       false,
                     ).url
                   }&expiredAt=${dayjs(formState.value.expiredAt).toISOString()}`;
-                  message.success("分享成功，请复制保存");
+                  message.success("上传成功，请复制保存");
                 })
                 .finally(() => {
                   loading.value = false;
@@ -89,7 +86,7 @@ export const ShareDirModal = defineComponent({
             {shareUrl.value ? (
               <div>
                 <div>
-                  {"分享地址"}: {shareUrl.value}
+                  上传地址: {shareUrl.value}
                   <Tooltip title={"复制地址"}>
                     <CopyOutlined
                       class={"ml-2"}
@@ -181,7 +178,7 @@ export const ShareDirModal = defineComponent({
                 htmlType={"submit"}
                 type={"primary"}
                 class={"ml-2"}>
-                {shareUrl.value ? "确定" : "分享"}
+                {shareUrl.value ? "确定" : "创建"}
               </Button>
             </div>
           </Form>

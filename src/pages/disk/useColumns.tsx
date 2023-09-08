@@ -32,9 +32,9 @@ import { useVideosViewerStore } from "@src/components/videosviewer";
 import { AuthButton } from "@src/components/authButton";
 import { useCurrentAccountStore } from "@src/pages/account";
 import { open } from "@tauri-apps/api/dialog";
-import { downloadDir } from "@tauri-apps/api/path";
 import { ShareDirModal } from "@src/pages/disk/component/ShareDirModal";
 import { IServerControllerObjectCtlObject } from "../../src-clients/storage/index";
+import { CreateDirUploadLinkModal } from "@src/pages/disk/component/CreateDirUploadLinkModal";
 
 export const useColumns = () => {
   const pathsStore = usePathsStore();
@@ -273,7 +273,7 @@ export const useColumns = () => {
                         <AuthButton
                           class={"px-10 w-full"}
                           type={"link"}
-                          hasPermission={store.roleType !== "GUEST"}
+                          hasPermission={store.roleType !== "MEMBER" && store.roleType !== "GUEST"}
                           onClick={() => {
                             Modal.confirm({
                               title: "复制文件",
@@ -300,7 +300,7 @@ export const useColumns = () => {
                         <AuthButton
                           class={"px-10 w-full"}
                           type={"link"}
-                          hasPermission={store.roleType !== "GUEST"}
+                          hasPermission={store.roleType !== "MEMBER" && store.roleType !== "GUEST"}
                           onClick={() => {
                             Modal.confirm({
                               title: rowData.isDir ? "分享文件夹" : "分享文件",
@@ -316,9 +316,38 @@ export const useColumns = () => {
                               wrapClassName: "confirmModal",
                             });
                           }}>
-                          分享
+                          创建分享链接
                         </AuthButton>
                       </MenuItem>
+                      {rowData.isDir && (
+                        <MenuItem>
+                          <AuthButton
+                            class={"px-10 w-full"}
+                            type={"link"}
+                            hasPermission={store.roleType !== "GUEST"}
+                            onClick={() => {
+                              Modal.confirm({
+                                title: "创建上传链接",
+                                width: "40rem",
+                                icon: null,
+                                centered: true,
+                                content: createVNode(
+                                  <CreateDirUploadLinkModal
+                                    isDir={rowData.isDir}
+                                    path={rowData.path}
+                                    name={rowData.name}
+                                  />,
+                                ),
+                                closable: true,
+                                cancelButtonProps: { style: { display: "none" } } as any,
+                                okButtonProps: { style: { display: "none" } } as any,
+                                wrapClassName: "confirmModal",
+                              });
+                            }}>
+                            创建上传链接
+                          </AuthButton>
+                        </MenuItem>
+                      )}
 
                       <MenuItem>
                         <AuthButton
