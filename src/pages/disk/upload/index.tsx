@@ -15,7 +15,7 @@ import { useRequest } from "vue-request";
 import { createDir, createOperationTask } from "@src/src-clients/storage";
 import { type } from "@tauri-apps/api/os";
 export const replaceFileName = (name: string): string => {
-  return name?.replaceAll(":", "：").replaceAll("/", "_").replaceAll("\\", "_");
+  return name?.replaceAll(":", ":").replaceAll("/", "_").replaceAll("\\", "_");
 };
 
 export const UploadModal = defineComponent({

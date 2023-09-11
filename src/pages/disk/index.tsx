@@ -2,11 +2,13 @@ import { defineComponent, onMounted, onUnmounted, ref, watch } from "vue";
 import { useBreadCrumbPathsStore, useCurrentPath, useDiskStore, usePathsStore } from "@src/pages/disk/store";
 import { useColumns } from "@src/pages/disk/useColumns";
 import { DiskMenus } from "@src/pages/disk/Menus";
-import { Breadcrumb, BreadcrumbItem, Tooltip } from "ant-design-vue";
+import { Breadcrumb, BreadcrumbItem, Tooltip, message } from "ant-design-vue";
 import { Table } from "@src/components/table";
 import { useCurrentAccountStore } from "@src/pages/account";
 import { IconSharedDir } from "@src/pages/disk/Icon";
 import { debounce } from "@querycap/lodash";
+import { CopyOutlined } from "@ant-design/icons-vue";
+import { writeText } from "@tauri-apps/api/clipboard";
 
 export const replacePathName = (path = "") => {
   if (path === "/" || path === "") return "全部文件";
@@ -48,7 +50,7 @@ export const Disk = defineComponent({
     return () => {
       return (
         <div class={"w-full h-full flex flex-col"} ref={domRef}>
-          <div class={"flex-shrink-0 mb-2 w-full"}>
+          <div class={"flex items-center flex-shrink-0 mb-2 w-full"}>
             <Breadcrumb class={"mb-2"}>
               {/*兼容性*/}
               {breadCrumbPathsStore.paths.map(({ path, owner, name }, index) => {
@@ -85,6 +87,16 @@ export const Disk = defineComponent({
                 );
               })}
             </Breadcrumb>
+            <Tooltip title={"复制当前路径"}>
+              <CopyOutlined
+                class={"ml-4"}
+                onClick={() => {
+                  writeText(currentPath.value).then(() => {
+                    message.success("复制成功");
+                  });
+                }}
+              />
+            </Tooltip>
           </div>
 
           <DiskMenus />
@@ -102,7 +114,7 @@ export const Disk = defineComponent({
                 if (store.offset + store.size >= store.total) {
                   return;
                 }
-                store.getFiles((store.offset += store.size));
+                store.getFiles(store.offset + store.size);
               },
               200,
               { leading: true },

@@ -56,10 +56,7 @@ export const CreateDirModal = defineComponent({
                     message.warn("无法使用「/」充当名称");
                     return;
                   }
-                  if (formState.value.dirName?.includes(":")) {
-                    message.warn("无法使用「:」充当名称");
-                    return;
-                  }
+
                   formState.value.dirName = replaceFileName(formState.value.dirName) || "";
                 }}
                 v-model:value={formState.value.dirName}

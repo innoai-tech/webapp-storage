@@ -1,11 +1,13 @@
 use crate::data_store::{DOWNLOAD_COMPLETE_STORE, DOWNLOAD_PROGRESS_STORE};
-use crate::queue::{refresh_token, AUTH_TOKEN, CLIENT_RETRY, DOWNLOAD_CONCURRENT_QUEUE};
+use crate::queue::{refresh_token, AUTH_TOKEN, DOWNLOAD_CONCURRENT_QUEUE};
 use async_recursion::async_recursion;
 use chrono::{Local, SecondsFormat};
 use futures_util::StreamExt;
 use pathdiff::diff_paths;
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use reqwest::StatusCode;
+use reqwest_middleware::ClientBuilder;
+use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -92,8 +94,19 @@ pub async fn download_core(
     }
     let file_path = Path::new(&local_path).join(file_tmp_name);
 
+    // 支持重试
+    let retry_policy = ExponentialBackoff {
+        max_n_retries: 2,
+        max_retry_interval: std::time::Duration::from_millis(10000),
+        min_retry_interval: std::time::Duration::from_millis(3000),
+        backoff_exponent: 2,
+    };
+    let client = ClientBuilder::new(reqwest::Client::new())
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
+
     // 发送 GET 请求，获取文件内容
-    let res = match CLIENT_RETRY.get(url).send().await {
+    let res = match client.get(url).send().await {
         Ok(res) => res,
         Err(e) => {
             return Err(Box::new(e));
@@ -103,6 +116,7 @@ pub async fn download_core(
     if res.status() == StatusCode::UNAUTHORIZED {
         refresh_token(&window);
         let body = res.text().await.map_err(|e| format!("{}", e))?;
+        drop(client);
         return Err(format!("401: {}", body).into());
     }
 
@@ -113,6 +127,7 @@ pub async fn download_core(
         if let Err(e) = std::fs::remove_file(&file_path) {
             eprintln!("删除文件失败: {}", e);
         }
+        drop(client);
         return Err(format!(
             "Request failed with status code {}, body: {}",
             status_code, body
@@ -155,7 +170,7 @@ pub async fn download_core(
         Ok(res) => res,
         Err(e) => println!("Error 重命名文件失败: {}", e),
     }
-    println!("drop");
+    drop(client);
     drop(file);
     drop(stream);
 
@@ -369,13 +384,24 @@ async fn get_files(
         Err(err) => return Err(err.into()),
     };
 
-    match CLIENT_RETRY
+    // 支持重试
+    let retry_policy = ExponentialBackoff {
+        max_n_retries: 2,
+        max_retry_interval: std::time::Duration::from_millis(10000),
+        min_retry_interval: std::time::Duration::from_millis(3000),
+        backoff_exponent: 2,
+    };
+    let client = ClientBuilder::new(reqwest::Client::new())
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
+    match client
         .get(url)
         .timeout(Duration::from_secs(300))
         .send()
         .await
     {
         Ok(res) => {
+            drop(client);
             let mut files: Vec<GetFilesResData> = vec![];
             if res.status() == StatusCode::UNAUTHORIZED {
                 println!("获取文件列表失败 401");
@@ -419,6 +445,7 @@ async fn get_files(
             }
         }
         Err(err) => {
+            drop(client);
             println!("错误了: {:?}", err);
             Err(err.into())
         }
@@ -444,7 +471,17 @@ pub async fn create_task(url: String, auth: String, desc: String) -> Result<Stri
     let err = MyError {
         message: format!("创建任务失败"),
     };
-    match CLIENT_RETRY
+    // 支持重试
+    let retry_policy = ExponentialBackoff {
+        max_n_retries: 2,
+        max_retry_interval: std::time::Duration::from_millis(10000),
+        min_retry_interval: std::time::Duration::from_millis(3000),
+        backoff_exponent: 2,
+    };
+    let client = ClientBuilder::new(reqwest::Client::new())
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
+    match client
         .post(url)
         .timeout(Duration::from_secs(300))
         .bearer_auth(auth.clone())
@@ -453,6 +490,7 @@ pub async fn create_task(url: String, auth: String, desc: String) -> Result<Stri
         .await
     {
         Ok(res) => {
+            drop(client);
             if res.status().is_success() {
                 let res_json_str = match res.json::<CreateTaskRes>().await {
                     Ok(res) => res,
@@ -469,6 +507,7 @@ pub async fn create_task(url: String, auth: String, desc: String) -> Result<Stri
             }
         }
         Err(err) => {
+            drop(client);
             let my_err = MyError {
                 message: format!("创建任务失败: {:?}", err),
             };

@@ -5,7 +5,7 @@ use chrono::{Local, SecondsFormat};
 use futures_util::StreamExt;
 use mime_guess::from_path;
 use reqwest::StatusCode;
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use std::error::Error;
 use std::fmt;

@@ -1,12 +1,7 @@
 import { defineComponent, ref } from "vue";
 import { Button, DatePicker, Form, FormItem, message, Modal, Tooltip } from "ant-design-vue";
 import { useRequest } from "vue-request";
-import {
-  getShareObject,
-  createObjectShareLink,
-  createObjectUploadLink,
-  uploadByLinkUpload,
-} from "@src/src-clients/storage";
+import { createObjectUploadLink, uploadByLinkUpload } from "@src/src-clients/storage";
 import { toFullTime } from "@src/utils/date";
 import { CopyOutlined } from "@ant-design/icons-vue";
 import { writeText } from "@tauri-apps/api/clipboard";

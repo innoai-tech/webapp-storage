@@ -13,7 +13,6 @@ import { getObject, IObjectObjectInfo } from "@src/src-clients/storage";
 import { useZoomModal } from "@src/components/imagesviewer/useZoomImage";
 import { useOffsetStore, useZoomStore } from "@src/components/imagesviewer/store";
 import { useMoveModal } from "@src/components/imagesviewer/useMoveModal";
-
 import { CircularArray } from "@src/components/imagesviewer/CircularArray";
 import { useDiskStore } from "@src/pages/disk/store";
 import { isImage } from "@src/pages/disk/Icon";
@@ -48,17 +47,49 @@ export const useImagesViewerStore = defineStore("imagesViewer", () => {
     return images.value[currentIndex.value];
   }
 
+  function getNextPageObjects() {
+    // 全部查找完毕，回到第一页
+    if (store.offset >= store.total) {
+      currentIndex.value = 0;
+    } else {
+      store.getFiles(store.offset + store.size)?.then((res) => {
+        // 如果有图片，就结束，否则继续查询
+        if (res.data?.some((obj) => !obj.isDir && isImage(obj["content-type"]))) {
+          currentIndex.value += 1;
+        } else {
+          // 继续获取，直到有图片
+          getNextPageObjects();
+        }
+      });
+    }
+  }
+
   function next() {
     if (currentIndex.value === -1 || images.value.length === 1) return;
-    currentIndex.value = currentIndex.value === images.value.length - 1 ? 0 : currentIndex.value + 1;
-    currentImagePath.value = images.value[currentIndex.value].path;
-    return images.value[currentIndex.value];
+
+    // 如果已经是最后一个，并且依旧有分页可以查询
+    if (currentIndex.value === images.value.length - 1 && store.objects?.length !== store.total) {
+      // 查询下一页
+      getNextPageObjects();
+    } else {
+      currentIndex.value = currentIndex.value === images.value.length - 1 ? 0 : currentIndex.value + 1;
+      currentImagePath.value = images.value[currentIndex.value].path;
+      return images.value[currentIndex.value];
+    }
   }
+
+  // 查找当前图片在 object 里的 index
+
+  const currentObjIndex = computed(() =>
+    store.objects?.findIndex((item) => item.sha256 === currentImage.value?.sha256),
+  );
   return {
+    currentObjIndex,
     setCurrentPath,
     images,
     next,
     prev,
+    currentIndex,
     currentImage,
   };
 });
@@ -72,6 +103,8 @@ export const ImagesViewer = defineComponent({
     const timer = setTimeout(() => {
       loading.value = true;
     });
+    const imageWidth = ref(0);
+    const imageHeight = ref(0);
     const imageRef = ref<HTMLImageElement | null>(null);
 
     // 方便快捷获取图片
@@ -213,6 +246,12 @@ export const ImagesViewer = defineComponent({
                   />
                 </Tooltip>
               </div>
+              <div class={"z-30 p-2 text-sm fixed left-8 top-16 mt-5 text-gray-200 cursor-pointer next"}>
+                预览进度：{`${imagesViewerStore.currentObjIndex + 1}/${store.total || 0}`}
+              </div>
+              <div class={"z-30 p-2 text-sm fixed left-8 top-16 mt-10 text-gray-200 cursor-pointer next"}>
+                图片分辨率：{`${imageWidth.value}*${imageHeight.value}`}
+              </div>
             </>
           )}
           <div ref={imageContainerRef} class={"relative z-40"}>
@@ -225,13 +264,13 @@ export const ImagesViewer = defineComponent({
                   <img
                     onLoad={() => {
                       if (!imageRef.value || !imageRef.value.parentElement) return;
-                      const height = imageRef.value.offsetHeight;
-                      const width = imageRef.value.offsetWidth;
+                      imageHeight.value = imageRef.value.offsetHeight;
+                      imageWidth.value = imageRef.value.offsetWidth;
                       const parentHeight = imageRef.value.parentElement.offsetHeight;
                       // 因为默认设置的宽度铺满，所以判断一下高度是否超出，如果超出把高度设置到父元素的高度，然后等比例缩小宽度
-                      if (height > parentHeight) {
+                      if (imageHeight.value > parentHeight) {
                         imageRef.value.height = parentHeight;
-                        imageRef.value.width = width * (parentHeight / height);
+                        imageRef.value.width = imageWidth.value * (parentHeight / imageHeight.value);
                         // 清除设置的默认宽度
                         imageRef.value.style.width = "auto";
                       }

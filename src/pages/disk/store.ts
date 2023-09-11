@@ -72,7 +72,7 @@ export function joinPath(path: string, subPath?: string) {
 }
 
 export const useDiskStore = defineStore("disk", () => {
-  const size = ref(500);
+  const size = ref(50);
   const offset = ref(0);
   const total = ref(0);
   const searchName = ref<string>("");
@@ -102,6 +102,7 @@ export const useDiskStore = defineStore("disk", () => {
       total.value = res.total || 0;
       roleType.value = res.roleType;
       objects.value = objects.value.concat(res.data || []);
+      console.log(objects.value.length, "objects.value");
     },
   });
 

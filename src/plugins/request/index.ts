@@ -38,7 +38,7 @@ export interface IStatusError {
 export interface IReq<TReq, TResBody> {
   (arg: TReq, opt?: AxiosRequestConfig): Promise<TResBody>;
   _name: string;
-  getConfig(arg: TReq, hasToken: boolean): { url: string; baseUrl: string };
+  getConfig(arg: TReq, hasToken?: boolean): { url: string; baseUrl: string };
 }
 
 const getBaseURL = (_: string) => {

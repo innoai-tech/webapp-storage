@@ -1,6 +1,6 @@
 import { CellRendererParams } from "element-plus/es/components/table-v2/src/types";
 import { toFullTime } from "@src/utils/date";
-import { deleteDir, deleteObject, dirStatistics } from "@src/src-clients/storage";
+import { deleteDir, deleteObject } from "@src/src-clients/storage";
 import { useBreadCrumbPathsStore, useCurrentPath, useDiskStore, usePathsStore } from "@src/pages/disk/store";
 import { computed, unref, createVNode, getCurrentInstance } from "vue";
 import { ExclamationCircleOutlined, MoreOutlined } from "@ant-design/icons-vue";
@@ -10,6 +10,7 @@ import { CopyAndMoveDirFilesModal } from "@src/components/selectDirModal";
 import { useRequest } from "vue-request";
 import { RenameFileModal } from "@src/pages/disk/component/RenameFileModal";
 import { getFileSize } from "@src/utils/getFileSize";
+import { writeText } from "@tauri-apps/api/clipboard";
 import { DirAuthModal } from "@src/components/dirAuth";
 import { useImagesViewerStore } from "@src/components/imagesviewer";
 import {
@@ -372,6 +373,31 @@ export const useColumns = () => {
                           }}>
                           重命名
                         </AuthButton>
+                      </MenuItem>
+
+                      <MenuItem>
+                        <Button
+                          type={"link"}
+                          class={"px-10 w-full"}
+                          onClick={() => {
+                            writeText(rowData.path).then(() => {
+                              message.success("复制成功");
+                            });
+                          }}>
+                          复制绝对路径
+                        </Button>
+                      </MenuItem>
+                      <MenuItem>
+                        <Button
+                          type={"link"}
+                          class={"px-10 w-full"}
+                          onClick={() => {
+                            writeText(rowData.name).then(() => {
+                              message.success("复制成功");
+                            });
+                          }}>
+                          复制相对路径
+                        </Button>
                       </MenuItem>
                       {rowData.isDir && (
                         <MenuItem>

@@ -576,7 +576,8 @@ pub fn open_folder(path: String) -> String {
 }
 #[wasm_bindgen]
 pub fn replace_file_name(name: &str) -> String {
-    let replaced_name = name.replace(":", "：");
+    // 暂时不处理这个了
+    let replaced_name = name.replace(":", ":");
     String::from(replaced_name)
 }
 

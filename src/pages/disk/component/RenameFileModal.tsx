@@ -91,10 +91,7 @@ export const RenameFileModal = defineComponent({
                     message.warn("无法使用「/」充当名称");
                     return;
                   }
-                  if (formState.value.name?.includes(":")) {
-                    message.warn("无法使用「:」充当名称");
-                    return;
-                  }
+
                   formState.value.name = replaceFileName(formState.value.name) || "";
                 }}
                 v-model:value={formState.value.name}
