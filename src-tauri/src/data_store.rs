@@ -8,6 +8,7 @@ pub struct UploadProgressItem {
     pub id: String,          // 上传文件的id
     pub progress: f32,       // 上传进度百分比
     pub errors: Vec<String>, // 错误信息数组
+    pub size: u64,           // 已上传大小
 }
 
 // 定义上传进度条的存储结构体
@@ -29,7 +30,13 @@ impl UploadProgressStore {
     }
 
     // 向上传进度条集合中添加一个新的进度条项
-    pub fn add(&mut self, id: String, progress: Option<f32>, error: Option<String>) {
+    pub fn add(
+        &mut self,
+        id: String,
+        progress: Option<f32>,
+        size: Option<u64>,
+        error: Option<String>,
+    ) {
         if let Some(existing_item) = self.data.iter_mut().find(|i| i.id == id) {
             if let Some(new_progress) = progress {
                 existing_item.progress = new_progress;
@@ -37,9 +44,13 @@ impl UploadProgressStore {
             if let Some(new_error) = error {
                 existing_item.errors.push(new_error);
             }
+            if let Some(new_size) = size {
+                existing_item.size = new_size
+            }
         } else {
             let mut new_item = UploadProgressItem {
                 id: id.clone(),
+                size: size.unwrap_or(0),
                 progress: progress.unwrap_or(0.0),
                 errors: Vec::new(),
             };
@@ -71,6 +82,7 @@ impl UploadProgressStore {
             .map(|item| UploadProgressItem {
                 id: item.id.to_owned(),
                 progress: item.progress,
+                size: item.size,
                 errors: item.errors.clone(),
             })
             .collect()

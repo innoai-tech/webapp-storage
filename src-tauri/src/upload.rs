@@ -1,22 +1,18 @@
 use crate::crypto::get_sha256;
 use crate::data_store::UPLOAD_PROGRESS_STORE;
-use crate::queue::{refresh_token, AUTH_TOKEN};
+use crate::queue::{refresh_token, AUTH_TOKEN, CLIENT_RETRY};
 use chrono::{Local, SecondsFormat};
-use futures_util::StreamExt;
+use isahc::Request;
 use mime_guess::from_path;
 use reqwest::StatusCode;
-use reqwest_middleware::ClientBuilder;
-use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use std::error::Error;
 use std::fmt;
 use std::fs::metadata;
+use std::fs::File;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::fs::File;
-use tokio_util::io::ReaderStream;
 use url::Url;
-
 #[derive(Debug)]
 struct CustomError {
     status: StatusCode,
@@ -62,7 +58,7 @@ pub async fn upload_core(
     // 克隆文件总长度
     let _total_len = total_len.clone();
     // 打开文件
-    let file = match File::open(local_path.clone()).await {
+    let file = match File::open(local_path.clone()) {
         Ok(file) => file,
         Err(e) => {
             eprintln!("打开文件失败 {:?}", e);
@@ -96,17 +92,6 @@ pub async fn upload_core(
         Box::new(e)
     })?;
 
-    // 支持重试
-    let retry_policy = ExponentialBackoff {
-        max_n_retries: 2,
-        max_retry_interval: std::time::Duration::from_millis(10000),
-        min_retry_interval: std::time::Duration::from_millis(3000),
-        backoff_exponent: 2,
-    };
-    let client_retry = ClientBuilder::new(reqwest::Client::new())
-        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-        .build();
-
     // 拼接检查对象是否存在的URL
     let check_object_url = match Url::parse_with_params(
         &check_object_url.clone(),
@@ -125,151 +110,73 @@ pub async fn upload_core(
     };
 
     // 发送检查请求，添加一个重试机制
-    let res = match client_retry
-        .get(check_object_url)
-        .timeout(Duration::from_secs(300))
-        .bearer_auth(auth_token_str.clone().to_string())
-        .send()
-        .await
-    {
+    let res = match CLIENT_RETRY.get(check_object_url.to_string()) {
         Ok(res) => res,
         Err(e) => {
             eprintln!("检查 SHA256 请求失败: {:?}", e);
-            drop(client_retry);
+
             return Err(Box::new(e));
         }
     };
-    if res.status() == StatusCode::UNAUTHORIZED {
+    if res.status() == 401 {
         refresh_token(&window);
         let error = CustomError {
             status: res.status(),
             message: format!("401: {:?}", local_path.clone()),
         };
 
-        drop(client_retry);
         return Err(Box::new(error));
     }
 
     // 如果返回码为200，则表示该对象已经存在，则直接做秒传处理
     if res.status().is_success() {
         // 发送上传请求
-        match client_retry
-            .post(url.as_str().clone())
-            .timeout(Duration::from_secs(300))
-            .bearer_auth(auth_token_str.clone().to_string())
-            .header("content-type", "application/octet-stream")
-            .send()
-            .await
-        {
+        match CLIENT_RETRY.post(url.as_str().clone(), "") {
             Ok(res) => {
-                drop(client_retry);
                 if res.status().is_success() || res.status() == 400 {
                     return Ok(());
                 } else {
                     let status = res.status();
-                    let body = res.text().await?;
+
                     let err = MyError {
-                        message: format!(
-                            "秒传失败,状态码 {:?}， body: {:?}， url: {:?}",
-                            status,
-                            body,
-                            url.clone()
-                        ),
+                        message: format!("秒传失败,状态码 {:?}，  url: {:?}", status, url.clone()),
                     };
                     return Err(Box::new(err));
                 }
             }
             Err(e) => {
-                drop(client_retry);
                 return Err(Box::new(e));
             }
         }
     }
 
-    // 上传客户端，目前重试无法充实上传文件，所以这里不重试
-    let client = reqwest::Client::new();
     // 目前发现接口响应错误后，文件流依旧读取记录导致进度不正确，这里处理一下，有响应就关掉 state 停止读取
     let read_file_state = Arc::new(AtomicU64::new(1));
     // 存储一下一共上传的进度，如果上传失败，就把总进度减去这部分进度
     let record_upload_len = Arc::new(AtomicU64::new(0));
     let _record_upload_len = record_upload_len.clone();
     let _read_file_state = read_file_state.clone();
-    let mut reader_stream = ReaderStream::new(file);
-    // 将文件数据流包装为异步流
-    let async_stream = async_stream::stream! {
-        while let Some(chunk) = reader_stream.next().await {
-            //0停止 1 读取
-            if _read_file_state.load(Ordering::Relaxed) == 0 {
-                break;
-            }
 
-            if let Ok(chunk) = &chunk {
-            let len: u64 = chunk.len() as u64;
-            // 保存当前上传进度
-            _record_upload_len.fetch_add(len, Ordering::Relaxed);
-
-            let total = _total_len.load(Ordering::Relaxed);
-            // 更新已上传长度
-            _uploaded_len.fetch_add(len, Ordering::Relaxed);
-            let new_len = _uploaded_len.load(Ordering::Relaxed);
-
-            UPLOAD_PROGRESS_STORE
-                .lock()
-                .unwrap()
-                .add(
-                    _id.clone(),
-                    Some(new_len as f32 / total.clone() as f32),
-                    None,
-                );
-            }
-            yield chunk;
-        }
-    };
-
-    let reset_upload_len = move || {
-        // 通知文件流停止读取
-        read_file_state.store(0, Ordering::Relaxed);
-
-        //减去本次上传的进度(上传中添加的进度只是为了实时展示，上传完毕会重新添加整个文件的进去，就删除上传中的这部分避免重复添加)
-
-        uploaded_len.fetch_sub(record_upload_len.load(Ordering::Relaxed), Ordering::Relaxed);
-
-        // 清空记录的
-        record_upload_len.store(0, Ordering::Relaxed);
-
-        // 更新一下前端进度
-        let total = total_len.load(Ordering::Relaxed);
-        let new_len = uploaded_len.load(Ordering::Relaxed);
-
-        UPLOAD_PROGRESS_STORE.lock().unwrap().add(
-            id.clone(),
-            Some(new_len as f32 / total.clone() as f32),
-            None,
-        );
+    let request = match Request::post(url.as_str())
+        .header("content-type", "application/octet-stream")
+        .body(isahc::Body::from_reader(file))
+    {
+        Ok(req) => req,
+        Err(err) => panic!("Failed to create HTTP client: {}", err),
     };
 
     // 发送上传请求
-    let _ = match client
-        .post(url.as_str())
-        .bearer_auth(auth_token_str.clone().to_string())
-        .header("content-type", "application/octet-stream")
-        .body(reqwest::Body::wrap_stream(async_stream))
-        .send()
-        .await
-    {
+    let _ = match isahc::send(request) {
         Ok(res) => {
-            drop(client);
-            reset_upload_len();
             if res.status().is_success() || res.status() == 400 {
                 return Ok(());
             } else {
                 let status = res.status();
-                let body = res.text().await?;
+
                 let err = MyError {
                     message: format!(
-                        "文件上传失败,状态码 {:?}， body: {:?},请求 url: {:?}",
+                        "文件上传失败,状态码 {:?}， 请求 url: {:?}",
                         status,
-                        body,
                         url.clone()
                     ),
                 };
@@ -278,8 +185,6 @@ pub async fn upload_core(
             }
         }
         Err(e) => {
-            drop(client);
-            reset_upload_len();
             return Err(Box::new(e));
         }
     };
@@ -337,6 +242,7 @@ pub async fn upload(
                 UPLOAD_PROGRESS_STORE.lock().unwrap().add(
                     id.clone(),
                     Some(new_len.clone() as f32 / total.clone() as f32),
+                    Some(new_len.clone() as u64),
                     None,
                 );
                 return Ok(res);
@@ -356,6 +262,7 @@ pub async fn upload(
                     UPLOAD_PROGRESS_STORE.lock().unwrap().add(
                         id.clone(),
                         Some(new_len as f32 / total.clone() as f32),
+                        Some(new_len as u64),
                         None,
                     );
                     return Err(e);

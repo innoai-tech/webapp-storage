@@ -86,21 +86,22 @@ export const useTransmissionStore = defineStore(storeKey, () => {
     listen() {
       listen("tauri://transmission-upload-emit", (res) => {
         const resData = res.payload as {
-          upload_complete_infos: { id: string; errors?: string[] }[];
-          upload_progress: { id: string; progress: number; errors: string[] }[];
+          upload_complete_infos: { id: string; size: number; errors?: string[] }[];
+          upload_progress: { id: string; size: number; progress: number; errors: string[] }[];
         };
-
         if (resData.upload_complete_infos?.length) {
           const infoMap: Record<string, ITransmission> = {};
           // 本次完成的信息
           const map: Record<
             string,
             {
+              size: number;
               errors?: string[];
             }
           > = {};
-          resData.upload_complete_infos.forEach(({ id, errors }) => {
+          resData.upload_complete_infos.forEach(({ id, size, errors }) => {
             map[id] = {
+              size,
               errors,
             };
           });
@@ -111,6 +112,7 @@ export const useTransmissionStore = defineStore(storeKey, () => {
             if (map[item.id]) {
               infoMap[item.id] = {
                 ...item,
+                size: item.size,
                 errs: map[item.id].errors,
               };
 
@@ -151,11 +153,13 @@ export const useTransmissionStore = defineStore(storeKey, () => {
             string,
             {
               progress: number;
+              size: number;
               errors?: string[];
             }
           > = {};
           resData.upload_progress.forEach((item) => {
             map[item.id] = {
+              size: item.size,
               progress: item.progress,
               errors: item.errors,
             };
@@ -165,6 +169,7 @@ export const useTransmissionStore = defineStore(storeKey, () => {
             if (map[item.id]?.progress !== undefined) {
               return {
                 ...item,
+                size: map[item.id].size,
                 errs: map[item.id].errors || item.errs,
                 progress: getProgress(map[item.id].progress),
               };

@@ -3,8 +3,8 @@ use std::sync::mpsc::{channel, Sender};
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 type Task = Box<dyn FnOnce() + Send>;
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use isahc::{config::RedirectPolicy, prelude::*, HttpClient};
+use std::time::Duration;
 use tokio::sync::Semaphore;
 // 任务信息枚举类型，包括任务和终止信息
 pub struct ConcurrentQueue {
@@ -93,20 +93,17 @@ impl ConcurrentQueue {
 lazy_static::lazy_static! {
     pub static ref DOWNLOAD_CONCURRENT_QUEUE: Arc<ConcurrentQueue> = Arc::new(ConcurrentQueue::new(15));
     pub static ref UPLOAD_CONCURRENT_QUEUE: Arc<ConcurrentQueue> = Arc::new(ConcurrentQueue::new(15));
-    pub static ref CLIENT: ClientWithMiddleware = {
-      let client = ClientBuilder::new(reqwest::Client::new()).build();
-      client
-    };
-    pub static ref CLIENT_RETRY: ClientWithMiddleware = {
+    pub static ref CLIENT_RETRY: HttpClient = {
        // 支持重试
-      let retry_policy = ExponentialBackoff {
-        max_n_retries: 2,
-        max_retry_interval: std::time::Duration::from_millis(10000),
-        min_retry_interval: std::time::Duration::from_millis(3000),
-        backoff_exponent: 2,
-      };
-      let client = ClientBuilder::new(reqwest::Client::new()).with(RetryTransientMiddleware::new_with_policy(retry_policy))
-      .build();
-      client
+       let client = match HttpClient::builder()
+       .timeout(Duration::from_secs(300))
+       .redirect_policy(RedirectPolicy::Follow)
+
+       .build() {
+           Ok(client) => client,
+           Err(err) => panic!("Failed to create HTTP client: {}", err),
+       };
+   client
+
     };
 }

@@ -415,6 +415,8 @@ pub async fn upload_dir(
                     UPLOAD_CONCURRENT_QUEUE
                         .push(
                             move || {
+                                let current_upload_size =
+                                    uploaded_len_clone_inner.load(Ordering::Relaxed) + size;
                                 let rt = tokio::runtime::Runtime::new().unwrap();
                                 rt.block_on(async {
                                     let path = _path.clone();
@@ -443,6 +445,7 @@ pub async fn upload_dir(
                                             UPLOAD_PROGRESS_STORE.lock().unwrap().add(
                                                 _id.clone(),
                                                 None,
+                                                Some(current_upload_size),
                                                 Some(err_str.clone()),
                                             );
                                             println!("UPLOAD ERR: {}", err)

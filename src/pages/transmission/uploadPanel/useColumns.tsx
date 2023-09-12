@@ -9,6 +9,7 @@ import { usePathsStore } from "@src/pages/disk/store";
 import { ErrorModal } from "@src/pages/transmission/compoment/ErrorModal";
 import { ExclamationCircleOutlined } from "@ant-design/icons-vue";
 import { invoke } from "@tauri-apps/api/tauri";
+import { getFileSize } from "@src/utils/getFileSize";
 
 export const useUploadPanelCheckedStore = defineStore("uploadPanelCheckedStore", () => {
   const checkedMap = ref<Record<string, boolean>>({});
@@ -88,7 +89,11 @@ export const useColumns = () => {
       dataKey: "progress",
       width: 150,
       cellRenderer({ rowData }: { rowData: ITransmission }) {
-        return <span>{rowData.progress}%</span>;
+        return (
+          <Tooltip title={"实际上传进度请查看上传大小，因为采用实时读取本地文件，进度并不准确"}>
+            <span>{rowData.progress}%</span>
+          </Tooltip>
+        );
       },
     },
     {
@@ -108,6 +113,19 @@ export const useColumns = () => {
               }}>
               {rowData.path}
             </span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "已上传大小",
+      key: "size",
+      dataKey: "size",
+      width: 300,
+      cellRenderer({ rowData }: { rowData: ITransmission }) {
+        return (
+          <Tooltip title={"已上传大小"}>
+            <span class={"text-left break-words ellipsis2"}>{getFileSize(rowData.size)}</span>
           </Tooltip>
         );
       },
