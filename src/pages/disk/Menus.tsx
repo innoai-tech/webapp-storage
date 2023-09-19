@@ -407,16 +407,16 @@ export const DiskMenus = defineComponent({
                                   currentPath.value === "/" || !currentPath.value ? "" : currentPath.value,
                                 );
 
-                                breadCrumbPathsStore.setPaths(
-                                  breadCrumbPathsStore.paths.concat(
-                                    paths.map((name) => {
-                                      return {
-                                        name: `/${name}`,
-                                        path: pathMap[name],
-                                      };
-                                    }),
-                                  ),
-                                );
+                                // breadCrumbPathsStore.setPaths(
+                                //   breadCrumbPathsStore.paths.concat(
+                                //     paths.map((name) => {
+                                //       return {
+                                //         name: `/${name}`,
+                                //         path: pathMap[name],
+                                //       };
+                                //     }),
+                                //   ),
+                                // );
                                 searchDirs.value = null;
 
                                 if (item.isDir) {

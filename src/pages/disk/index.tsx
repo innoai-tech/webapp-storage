@@ -47,6 +47,20 @@ export const Disk = defineComponent({
     });
     const breadCrumbPathsStore = useBreadCrumbPathsStore();
 
+    watch(
+      () => pathsStore.paths,
+      () => {
+        breadCrumbPathsStore.setPaths(
+          breadCrumbPathsStore.paths.slice(0, 1).concat(
+            pathsStore.paths.map((item) => ({
+              name: item,
+              path: item,
+            })),
+          ),
+        );
+      },
+      { immediate: true },
+    );
     return () => {
       return (
         <div class={"w-full h-full flex flex-col"} ref={domRef}>
@@ -63,7 +77,7 @@ export const Disk = defineComponent({
                         // 当前目录不操作
                         if (currentPath.value === path) return;
 
-                        breadCrumbPathsStore.setPaths(breadCrumbPathsStore.paths.slice(0, index + 1));
+                        // breadCrumbPathsStore.setPaths(breadCrumbPathsStore.paths.slice(0, index + 1));
 
                         const paths = path === "/" ? [] : path.split("/").filter((path) => path);
                         pathsStore.setPaths(paths);

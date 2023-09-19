@@ -123,15 +123,15 @@ export const useColumns = () => {
               onClick={() => {
                 if (store.loading) return;
                 if (rowData.isDir) {
-                  breadCrumbPathsStore.setPaths(
-                    breadCrumbPathsStore.paths.concat([
-                      {
-                        name: rowData.name,
-                        path: rowData.path,
-                        owner: rowData.owner,
-                      },
-                    ]),
-                  );
+                  // breadCrumbPathsStore.setPaths(
+                  //   breadCrumbPathsStore.paths.concat([
+                  //     {
+                  //       name: rowData.name,
+                  //       path: rowData.path,
+                  //       owner: rowData.owner,
+                  //     },
+                  //   ]),
+                  // );
 
                   pathsStore.setPaths(store.goToPath(rowData.path));
                 } else if (isImg) {
@@ -195,14 +195,14 @@ export const useColumns = () => {
                 disabled={disabled}
                 onClick={() => {
                   if (rowData.isDir) {
-                    breadCrumbPathsStore.setPaths(
-                      breadCrumbPathsStore.paths.concat([
-                        {
-                          name: rowData.name,
-                          path: rowData.path,
-                        },
-                      ]),
-                    );
+                    // breadCrumbPathsStore.setPaths(
+                    //   breadCrumbPathsStore.paths.concat([
+                    //     {
+                    //       name: rowData.name,
+                    //       path: rowData.path,
+                    //     },
+                    //   ]),
+                    // );
                     pathsStore.setPaths(store.goToPath(rowData.path));
                   } else if (isImage(rowData["content-type"])) {
                     imagesViewerStore.setCurrentPath(rowData.path);
