@@ -78,6 +78,11 @@ export const Sidenav = defineComponent({
           key: "share",
         },
         {
+          icon: <ShareAltOutlined />,
+          label: "插件记录",
+          key: "plugin",
+        },
+        {
           icon: <ApartmentOutlined />,
           label: "凭证管理",
           key: "clientManage",

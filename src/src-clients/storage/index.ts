@@ -732,6 +732,16 @@ export const displayAuthToken = (field: keyof IAuthToken) => {
   )[field];
 };
 
+export const displayCallbackPluginCallbackBody = (field: keyof ICallbackPluginCallbackBody) => {
+  return (
+    {
+      message: "",
+      progress: "",
+      state: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
 export const displayClientAccountClient = (field: keyof IClientAccountClient) => {
   return (
     displayUtilsDatatypesPrimaryID(field as any) ||
@@ -890,6 +900,13 @@ export const displayGroupUserGroupDataList = (field: keyof IGroupUserGroupDataLi
   )[field];
 };
 
+export const displayLinkFromType = (type: "USER" | "PLUGIN") => {
+  return {
+    USER: "用户",
+    PLUGIN: "插件",
+  }[type];
+};
+
 export const displayLinkShare = (field: keyof ILinkShare) => {
   return (
     displayUtilsDatatypesPrimaryID(field as any) ||
@@ -898,6 +915,8 @@ export const displayLinkShare = (field: keyof ILinkShare) => {
     (
       {
         accountID: "",
+        fromID: "",
+        fromType: "",
         shareID: "组织 ID",
         signature: "",
         state: "",
@@ -950,6 +969,8 @@ export const displayLinkUpload = (field: keyof ILinkUpload) => {
     (
       {
         accountID: "",
+        fromID: "",
+        fromType: "",
         signature: "",
         state: "",
         uploadID: "",
@@ -1111,6 +1132,14 @@ export const displayObjectObjectsCopyParam = (field: keyof IObjectObjectsCopyPar
   )[field];
 };
 
+export const displayObjectTriggerDirPluginBody = (field: keyof IObjectTriggerDirPluginBody) => {
+  return (
+    {
+      name: "插件名称",
+    } as { [key: string]: string }
+  )[field];
+};
+
 export const displayOpenapiObjectObjectDataList = (field: keyof IOpenapiObjectObjectDataList) => {
   return (
     {
@@ -1244,6 +1273,83 @@ export const displayOperationOperatorType = (type: "ACCOUNT" | "GROUP" | "SHARE"
     GROUP: "组织",
     SHARE: "分享",
   }[type];
+};
+
+export const displayPlugin = (field: keyof IPlugin) => {
+  return (
+    displayUtilsDatatypesPrimaryID(field as any) ||
+    displayUtilsDatatypesCreationUpdationTime(field as any) ||
+    (
+      {
+        accountID: "操作者 ID",
+        name: "插件名称",
+        path: "路径",
+        progress: "进展",
+        signature: "",
+        state: "状态",
+        taskID: "任务ID",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayPluginPluginDataList = (field: keyof IPluginPluginDataList) => {
+  return (
+    {
+      data: "",
+      total: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayPluginPluginList = (field: keyof IPluginPluginList) => {
+  return (
+    {
+      plugin: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayPluginPluginOpt = (field: keyof IPluginPluginOpt) => {
+  return (
+    {
+      desc: "描述",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayPluginPluginWithUser = (field: keyof IPluginPluginWithUser) => {
+  return (
+    displayPlugin(field as any) ||
+    (
+      {
+        user: "",
+      } as { [key: string]: string }
+    )[field]
+  );
+};
+
+export const displayPluginProgress = (field: keyof IPluginProgress) => {
+  return (
+    {
+      message: "",
+      name: "",
+      progress: "",
+    } as { [key: string]: string }
+  )[field];
+};
+
+export const displayPluginState = (type: "PENDING" | "PROGRESS" | "FAIL" | "SUCCESS") => {
+  return {
+    PENDING: "待处理",
+    PROGRESS: "进行中",
+    FAIL: "失败",
+    SUCCESS: "成功",
+  }[type];
+};
+
+export const displayPluginUser = (field: any) => {
+  return displayAccount(field as any) || ({} as { [key: string]: string })[field];
 };
 
 export const displayRbacAccount = (field: keyof IRbacAccount) => {
@@ -1495,6 +1601,22 @@ export const getObject = createApiInstance<
     };
   },
 );
+
+export const getPlugin = createApiInstance<
+  {
+    authorization?: string;
+    taskID: IPluginTaskID;
+  },
+  IPlugin
+>("storage.GetPlugin", ({ authorization: pAuthorization, taskID: pTaskID }) => {
+  return {
+    method: "GET",
+    url: `/api/storage/v0/plugins/${pTaskID}`,
+    query: {
+      authorization: pAuthorization,
+    },
+  };
+});
 
 export const getShareObject = createApiInstance<
   {
@@ -1932,6 +2054,68 @@ export const listOperationLog = createApiInstance<
   },
 );
 
+export const listPlugin = createApiInstance<
+  {
+    authorization?: string;
+    taskID?: IPluginTaskID | IPluginTaskID[];
+    accountID?: IAccountAccountID | IAccountAccountID[];
+    name?: string | string[];
+    path?: string | string[];
+    state?: IPluginState | IPluginState[];
+    createdAt?: IUtilsDatatypesDateTimeOrRange;
+    sort?: IUtilsDatatypesSort;
+    size?: number;
+    offset?: number;
+  },
+  IPluginPluginDataList
+>(
+  "storage.ListPlugin",
+  ({
+    authorization: pAuthorization,
+    taskID: pTaskID,
+    accountID: pAccountID,
+    name: pName,
+    path: pPath,
+    state: pState,
+    createdAt: pCreatedAt,
+    sort: pSort,
+    size: pSize,
+    offset: pOffset,
+  }) => {
+    return {
+      method: "GET",
+      url: `/api/storage/v0/plugins`,
+      query: {
+        authorization: pAuthorization,
+        taskID: pTaskID,
+        accountID: pAccountID,
+        name: pName,
+        path: pPath,
+        state: pState,
+        createdAt: pCreatedAt,
+        sort: pSort,
+        size: pSize,
+        offset: pOffset,
+      },
+    };
+  },
+);
+
+export const listPluginProvider = createApiInstance<
+  {
+    authorization?: string;
+  },
+  IPluginPluginList
+>("storage.ListPluginProvider", ({ authorization: pAuthorization }) => {
+  return {
+    method: "GET",
+    url: `/api/storage/v0/plugin-providers`,
+    query: {
+      authorization: pAuthorization,
+    },
+  };
+});
+
 export const listShareLink = createApiInstance<
   {
     authorization?: string;
@@ -2248,6 +2432,30 @@ export const operationUndo = createApiInstance<
   };
 });
 
+export const pluginCallback = createApiInstance<
+  {
+    signature: string;
+    taskID: IPluginTaskID;
+    step: string;
+    body: ICallbackPluginCallbackBody;
+  },
+  null
+>("storage.PluginCallback", ({ signature: pSignature, taskID: pTaskID, step: pStep, body: pBody }) => {
+  return {
+    method: "PUT",
+    url: `/api/storage/v0/callback/plugin`,
+    data: pBody,
+    query: {
+      signature: pSignature,
+      taskID: pTaskID,
+      step: pStep,
+    },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+});
+
 export const putAccountClient = createApiInstance<
   {
     authorization?: string;
@@ -2422,6 +2630,30 @@ export const refreshToken = createApiInstance<
   };
 });
 
+export const triggerDirPlugin = createApiInstance<
+  {
+    authorization?: string;
+    path: string;
+    taskCode?: string;
+    body: IObjectTriggerDirPluginBody;
+  },
+  IPlugin
+>("storage.TriggerDirPlugin", ({ authorization: pAuthorization, path: pPath, taskCode: pTaskCode, body: pBody }) => {
+  return {
+    method: "POST",
+    url: `/api/storage/v0/dirs/plugin`,
+    data: pBody,
+    query: {
+      authorization: pAuthorization,
+      path: pPath,
+      taskCode: pTaskCode,
+    },
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+});
+
 export const unBindDirGroupRole = createApiInstance<
   {
     authorization?: string;
@@ -2513,6 +2745,7 @@ export const uploadByLinkUpload = createApiInstance<
     path: string;
     "content-type": string;
     sha256?: string;
+    force?: IDatatypesBool;
     body: any;
   },
   null
@@ -2524,6 +2757,7 @@ export const uploadByLinkUpload = createApiInstance<
     path: pPath,
     "content-type": pContentType,
     sha256: pSha256,
+    force: pForce,
     body: pBody,
   }) => {
     return {
@@ -2535,6 +2769,7 @@ export const uploadByLinkUpload = createApiInstance<
         signature: pSignature,
         path: pPath,
         sha256: pSha256,
+        force: pForce,
       },
       headers: {
         "content-type": pContentType,
@@ -2555,6 +2790,11 @@ export enum GroupRoleType {
   MEMBER = "MEMBER",
 }
 
+export enum LinkFromType {
+  USER = "USER",
+  PLUGIN = "PLUGIN",
+}
+
 export enum LinkState {
   ENABLE = "ENABLE",
   DISABLE = "DISABLE",
@@ -2573,6 +2813,13 @@ export enum OperationOperatorType {
   ACCOUNT = "ACCOUNT",
   GROUP = "GROUP",
   SHARE = "SHARE",
+}
+
+export enum PluginState {
+  PENDING = "PENDING",
+  PROGRESS = "PROGRESS",
+  FAIL = "FAIL",
+  SUCCESS = "SUCCESS",
 }
 
 export enum RbacRoleType {
@@ -2649,6 +2896,12 @@ export interface IAuthToken {
   expires_in: number;
   refresh_token: string;
   type: string;
+}
+
+export interface ICallbackPluginCallbackBody {
+  message?: string;
+  progress?: number;
+  state: IPluginState;
 }
 
 export interface IClientAccountClient
@@ -2730,6 +2983,8 @@ export interface ILinkShare
     ILinkShareBase,
     IUtilsDatatypesCreationUpdationDeletionTime {
   accountID: IAccountAccountID;
+  fromID: IDatatypesSfid;
+  fromType: ILinkFromType;
   shareID: ILinkShareID;
   signature: string;
   state: ILinkState;
@@ -2754,6 +3009,8 @@ export interface ILinkUpload
     ILinkUploadBase,
     IUtilsDatatypesCreationUpdationDeletionTime {
   accountID: IAccountAccountID;
+  fromID: IDatatypesSfid;
+  fromType: ILinkFromType;
   signature: string;
   state: ILinkState;
   uploadID: ILinkUploadID;
@@ -2843,6 +3100,10 @@ export interface IObjectObjectsCopyParam {
   targetPath: string;
 }
 
+export interface IObjectTriggerDirPluginBody {
+  name: string;
+}
+
 export interface IOpenapiObjectObjectDataList {
   data: IServerControllerObjectCtlObject[];
 }
@@ -2899,6 +3160,43 @@ export interface IOperationOperationLogDataList {
 export interface IOperationOperationWithOperatorName extends IOperation {
   operatorName: string;
 }
+
+export interface IPlugin extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationUpdationTime {
+  accountID: IAccountAccountID;
+  name: string;
+  path: string;
+  progress: IPluginProgresses;
+  signature: string;
+  state: IPluginState;
+  taskID: IPluginTaskID;
+}
+
+export interface IPluginPluginDataList {
+  data: IPluginPluginWithUser[];
+  total: number;
+}
+
+export interface IPluginPluginList {
+  plugin: {
+    [k: string]: IPluginPluginOpt;
+  };
+}
+
+export interface IPluginPluginOpt {
+  desc?: string;
+}
+
+export interface IPluginPluginWithUser extends IPlugin {
+  user: IPluginUser;
+}
+
+export interface IPluginProgress {
+  message: string;
+  name: string;
+  progress: number;
+}
+
+export interface IPluginUser extends IAccount {}
 
 export interface IRbacAccount extends IUtilsDatatypesPrimaryID, IUtilsDatatypesCreationUpdationDeletionTime {
   accountID: IAccountAccountID;
@@ -3007,6 +3305,8 @@ export type IGroupRoleType = keyof typeof GroupRoleType;
 
 export type IImageProcessProcessCondition = string;
 
+export type ILinkFromType = keyof typeof LinkFromType;
+
 export type ILinkShareID = string;
 
 export type ILinkState = keyof typeof LinkState;
@@ -3026,6 +3326,12 @@ export type IOperationOperationType = keyof typeof OperationOperationType;
 export type IOperationOperatorType = keyof typeof OperationOperatorType;
 
 export type IOperationText = string;
+
+export type IPluginProgresses = IPluginProgress[];
+
+export type IPluginState = keyof typeof PluginState;
+
+export type IPluginTaskID = string;
 
 export type IRbacRoleType = keyof typeof RbacRoleType;
 

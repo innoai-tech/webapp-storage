@@ -10,6 +10,7 @@ import { TaskLog } from "@src/pages/taskLog";
 import { Setting } from "@src/pages/setting";
 import { ClientManage } from "@src/pages/clientManage";
 import { Share } from "@src/pages/share";
+import { PluginLog } from "@src/pages/plugin";
 export const routes = [
   { path: "/login", component: Index, name: "login" },
 
@@ -57,6 +58,13 @@ export const routes = [
             name: "transmission",
             children: [],
             meta: { title: "传输管理" },
+          },
+          {
+            path: "plugin",
+            component: PluginLog,
+            name: "plugin",
+            children: [],
+            meta: { title: "插件记录" },
           },
           {
             path: "task-log",

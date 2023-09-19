@@ -36,6 +36,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { ShareDirModal } from "@src/pages/disk/component/ShareDirModal";
 import { IServerControllerObjectCtlObject } from "../../src-clients/storage/index";
 import { CreateDirUploadLinkModal } from "@src/pages/disk/component/CreateDirUploadLinkModal";
+import { PluginModal } from "@src/pages/disk/component/PluginModal";
 
 export const useColumns = () => {
   const pathsStore = usePathsStore();
@@ -399,6 +400,29 @@ export const useColumns = () => {
                           复制相对路径
                         </Button>
                       </MenuItem>
+                      {rowData.isDir && (
+                        <MenuItem>
+                          <AuthButton
+                            class={"px-10 w-full"}
+                            type={"link"}
+                            hasPermission={store.roleType !== "GUEST" && store.roleType !== "MEMBER"}
+                            onClick={() => {
+                              Modal.confirm({
+                                title: "插件管理",
+                                width: "850px",
+                                icon: null,
+                                centered: true,
+                                content: createVNode(<PluginModal path={rowData.path} />),
+                                closable: true,
+                                cancelButtonProps: { style: { display: "none" } } as any,
+                                okButtonProps: { style: { display: "none" } } as any,
+                                wrapClassName: "confirmModal",
+                              });
+                            }}>
+                            插件管理
+                          </AuthButton>
+                        </MenuItem>
+                      )}
                       {rowData.isDir && (
                         <MenuItem>
                           <AuthButton
