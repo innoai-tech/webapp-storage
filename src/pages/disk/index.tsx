@@ -6,7 +6,7 @@ import { Breadcrumb, BreadcrumbItem, Tooltip, message } from "ant-design-vue";
 import { Table } from "@src/components/table";
 import { useCurrentAccountStore } from "@src/pages/account";
 import { IconSharedDir } from "@src/pages/disk/Icon";
-import { debounce } from "@querycap/lodash";
+import { debounce, last } from "@querycap/lodash";
 import { CopyOutlined } from "@ant-design/icons-vue";
 import { writeText } from "@tauri-apps/api/clipboard";
 
@@ -50,14 +50,15 @@ export const Disk = defineComponent({
     watch(
       () => pathsStore.paths,
       () => {
-        breadCrumbPathsStore.setPaths(
-          breadCrumbPathsStore.paths.slice(0, 1).concat(
-            pathsStore.paths.map((item) => ({
-              name: item,
-              path: item,
-            })),
-          ),
-        );
+        // path 只记录了每一级的路径，需要叠加他的父路径才是完整路径
+        const paths = pathsStore.paths.reduce((list, current) => {
+          return list.concat({
+            name: current,
+            path: last(list) ? `${last(list)!.path}/${current}` : `/${current}`,
+          });
+        }, [] as { path: string; name: string }[]);
+
+        breadCrumbPathsStore.setPaths(breadCrumbPathsStore.paths.slice(0, 1).concat(paths));
       },
       { immediate: true },
     );
@@ -80,6 +81,7 @@ export const Disk = defineComponent({
                         // breadCrumbPathsStore.setPaths(breadCrumbPathsStore.paths.slice(0, index + 1));
 
                         const paths = path === "/" ? [] : path.split("/").filter((path) => path);
+                        console.log(paths, "paths");
                         pathsStore.setPaths(paths);
 
                         // 清空搜索
