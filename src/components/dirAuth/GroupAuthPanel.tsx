@@ -61,6 +61,7 @@ export const GroupAuthPanel = defineComponent({
 
     onMounted(() => {
       groupsStore.getGroups();
+      dirAuthStore.refreshDirRoles();
     });
 
     const searchedGroups = computed(

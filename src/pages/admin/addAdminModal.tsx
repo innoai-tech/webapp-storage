@@ -1,4 +1,4 @@
-import { computed, defineComponent, onUnmounted, ref } from "vue";
+import { computed, defineComponent, onMounted, onUnmounted, ref } from "vue";
 import { Form, FormItem, message, Select } from "ant-design-vue";
 import { defineStore } from "pinia";
 import { useRequest } from "vue-request";
@@ -69,14 +69,17 @@ export const AddAdminModal = defineComponent({
     const adminStore = useAdminStore();
     const membersStore = useMembersStore();
 
-    onUnmounted(() => {
+    onMounted(() => {
       addAdminStore.clearForm();
       adminStore.refresh();
+      membersStore.getMembers();
     });
 
     const adminMap = computed(() =>
       adminStore.admins?.data?.map((item) => item.accountID)?.reduce((p, c) => ({ ...p, [c]: true }), {}),
     );
+
+    const searchValue = ref("");
 
     return () => {
       return (
@@ -89,13 +92,16 @@ export const AddAdminModal = defineComponent({
               rules={[{ required: true, message: "请选择需要添加的用户", trigger: "change" }]}>
               <Select
                 showSearch
+                onSearch={(value) => {
+                  searchValue.value = value;
+                }}
                 optionFilterProp={"label"}
                 placeholder={"请选择需要添加的用户"}
                 v-model:value={addAdminStore.form.accountID}>
-                {membersStore.members?.data.map((member) => {
+                {membersStore.members?.data?.map((member) => {
                   const isAdmin = adminMap.value?.[member.accountID];
                   return (
-                    <Select.Option key={member.accountID} disabled={isAdmin}>
+                    <Select.Option label={member.name} key={member.accountID} disabled={isAdmin}>
                       <div class={"flex justify-between items-end"}>
                         <span>{member.name}</span>
                         <span class={"text-xs"}>{isAdmin ? "管理员" : ""}</span>
